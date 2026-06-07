@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.exchange.mapper.GoodsMapper">
+
+    <sql id="goodsCardColumns">
+        g.id, g.title, g.price, g.`condition`, g.view_count AS viewCount, g.favorite_count AS favoriteCount,
+        g.status, g.campus, g.trade_type AS tradeType, g.create_time AS createTime,
+        u.id AS seller_id, u.nickname AS seller_nickname, u.avatar AS seller_avatar,
+        (SELECT gi.image_url FROM goods_image gi WHERE gi.goods_id = g.id ORDER BY gi.sort_order LIMIT 1) AS coverImage
+    </sql>
+
+    <select id="searchGoods" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.deleted = 0 AND g.status = 'ACTIVE'
+        <if test="dto.keyword != null and dto.keyword != ''">
+            AND (g.title LIKE CONCAT('%', #{dto.keyword}, '%') OR g.description LIKE CONCAT('%', #{dto.keyword}, '%'))
+        </if>
+        <if test="dto.categoryId != null">
+            AND g.category_id = #{dto.categoryId}
+        </if>
+        <if test="dto.condition != null and dto.condition != ''">
+            AND g.`condition` = #{dto.condition}
+        </if>
+        <if test="dto.minPrice != null">
+            AND g.price &gt;= #{dto.minPrice}
+        </if>
+        <if test="dto.maxPrice != null">
+            AND g.price &lt;= #{dto.maxPrice}
+        </if>
+        <if test="dto.campus != null and dto.campus != ''">
+            AND g.campus = #{dto.campus}
+        </if>
+        <choose>
+            <when test="dto.sort == 'price_asc'">ORDER BY g.price ASC</when>
+            <when test="dto.sort == 'price_desc'">ORDER BY g.price DESC</when>
+            <when test="dto.sort == 'views'">ORDER BY g.view_count DESC</when>
+            <when test="dto.sort == 'popular'">ORDER BY g.favorite_count DESC, g.view_count DESC</when>
+            <otherwise>ORDER BY g.create_time DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectRecommendList" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.deleted = 0 AND g.status = 'ACTIVE'
+        ORDER BY (g.view_count * 0.7 + g.favorite_count * 0.3) DESC, g.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectLatestList" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.deleted = 0 AND g.status = 'ACTIVE'
+        ORDER BY g.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectMyGoods" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.deleted = 0 AND g.user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND g.status = #{status}
+        </if>
+        ORDER BY g.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectFavoriteGoods" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM favorite f
+        INNER JOIN goods g ON f.goods_id = g.id AND g.deleted = 0 AND g.status = 'ACTIVE'
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE f.user_id = #{userId}
+        ORDER BY f.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectGoodsCardById" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.id = #{id}
+    </select>
+
+</mapper>
