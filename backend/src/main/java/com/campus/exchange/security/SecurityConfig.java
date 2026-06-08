@@ -38,7 +38,8 @@ public class SecurityConfig {
                         "/api/user/profile/*",
                         "/api/announcement/**",
                         "/api/search/**",
-                        "/api/comment/**").permitAll()
+                        "/api/comment/**",
+                        "/api/file/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()

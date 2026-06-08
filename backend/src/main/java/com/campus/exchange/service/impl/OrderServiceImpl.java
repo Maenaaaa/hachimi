@@ -1,6 +1,7 @@
 package com.campus.exchange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.exchange.dto.CreateOrderDTO;
 import com.campus.exchange.entity.*;
@@ -137,6 +138,94 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
+    public OrderVO requestCancel(Long orderId, Long userId, String reason) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) throw new BusinessException("订单不存在");
+        if (!order.getBuyerId().equals(userId) && !order.getSellerId().equals(userId))
+            throw new BusinessException(403, "无权操作此订单");
+        if (!"IN_PROGRESS".equals(order.getStatus())) throw new BusinessException("当前订单状态不允许申请取消");
+        if (order.getCancelRequesterId() != null) throw new BusinessException("已存在待处理的取消申请");
+
+        String role = order.getBuyerId().equals(userId) ? "买家" : "卖家";
+        Long targetId = order.getBuyerId().equals(userId) ? order.getSellerId() : order.getBuyerId();
+
+        order.setStatus("CANCEL_REQUESTED");
+        order.setCancelReason(reason);
+        order.setCancelRequesterId(userId);
+        order.setCancelRequestTime(java.time.LocalDateTime.now());
+        orderMapper.updateById(order);
+
+        addLog(order.getId(), "CANCEL_REQUEST", userId, role + "申请取消：" + reason);
+        notificationService.create(targetId, "ORDER", role + "申请取消交易",
+                role + "申请取消订单，原因：" + reason, order.getId());
+
+        return toOrderVO(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderVO approveCancel(Long orderId, Long userId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) throw new BusinessException("订单不存在");
+        if (!order.getBuyerId().equals(userId) && !order.getSellerId().equals(userId))
+            throw new BusinessException(403, "无权操作此订单");
+        if (order.getCancelRequesterId() != null && order.getCancelRequesterId().equals(userId))
+            throw new BusinessException("不能审批自己发起的取消申请");
+        if (!"CANCEL_REQUESTED".equals(order.getStatus())) throw new BusinessException("当前订单状态不允许操作");
+
+        String role = order.getBuyerId().equals(userId) ? "买家" : "卖家";
+        String requesterRole = order.getBuyerId().equals(order.getCancelRequesterId()) ? "买家" : "卖家";
+
+        order.setStatus("CANCELLED");
+        orderMapper.updateById(order);
+
+        Goods goods = goodsMapper.selectById(order.getGoodsId());
+        if (goods != null) {
+            goods.setStatus("ACTIVE");
+            goodsMapper.updateById(goods);
+        }
+
+        addLog(order.getId(), "CANCEL_APPROVE", userId, role + "同意取消");
+        notificationService.create(order.getCancelRequesterId(), "ORDER", "取消申请已通过",
+                role + "已同意取消订单", order.getId());
+
+        return toOrderVO(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderVO rejectCancel(Long orderId, Long userId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) throw new BusinessException("订单不存在");
+        if (!order.getBuyerId().equals(userId) && !order.getSellerId().equals(userId))
+            throw new BusinessException(403, "无权操作此订单");
+        if (order.getCancelRequesterId() != null && order.getCancelRequesterId().equals(userId))
+            throw new BusinessException("不能拒绝自己发起的取消申请");
+        if (!"CANCEL_REQUESTED".equals(order.getStatus())) throw new BusinessException("当前订单状态不允许操作");
+
+        String role = order.getBuyerId().equals(userId) ? "买家" : "卖家";
+        Long requesterId = order.getCancelRequesterId();
+
+        order.setStatus("IN_PROGRESS");
+        orderMapper.updateById(order);
+
+        orderMapper.update(null, new LambdaUpdateWrapper<Order>()
+                .eq(Order::getId, orderId)
+                .set(Order::getCancelReason, "")
+                .set(Order::getCancelRequesterId, null)
+                .set(Order::getCancelRequestTime, null));
+
+        addLog(order.getId(), "CANCEL_REJECT", userId, role + "拒绝取消");
+        if (requesterId != null) {
+            notificationService.create(requesterId, "ORDER", "取消申请被拒绝",
+                    role + "拒绝了取消订单", order.getId());
+        }
+
+        return toOrderVO(order);
+    }
+
+    @Override
     public List<OrderVO> getBuyerOrders(Long userId, String status, int page, int size) {
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
                 .eq(Order::getBuyerId, userId).eq(Order::getDeleted, 0);
@@ -162,7 +251,9 @@ public class OrderServiceImpl implements OrderService {
     public OrderDetailVO getDetail(Long orderId, Long userId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) throw new BusinessException("订单不存在");
-        if (!order.getBuyerId().equals(userId) && !order.getSellerId().equals(userId))
+        User currentUser = userMapper.selectById(userId);
+        boolean isAdmin = currentUser != null && "ADMIN".equals(currentUser.getRole());
+        if (!isAdmin && !order.getBuyerId().equals(userId) && !order.getSellerId().equals(userId))
             throw new BusinessException(403, "无权查看此订单");
 
         OrderDetailVO vo = new OrderDetailVO();
@@ -195,6 +286,14 @@ public class OrderServiceImpl implements OrderService {
         vo.setCreateTime(order.getCreateTime());
         vo.setUpdateTime(order.getUpdateTime());
         if (goods != null) vo.setGoodsDescription(goods.getDescription());
+
+        vo.setCancelReason(order.getCancelReason());
+        vo.setCancelRequesterId(order.getCancelRequesterId());
+        vo.setCancelRequestTime(order.getCancelRequestTime());
+        if (order.getCancelRequesterId() != null) {
+            User requester = userMapper.selectById(order.getCancelRequesterId());
+            vo.setCancelRequesterName(requester != null ? requester.getNickname() : "");
+        }
 
         List<OrderLog> logs = orderLogMapper.selectList(
                 new LambdaQueryWrapper<OrderLog>().eq(OrderLog::getOrderId, orderId).orderByAsc(OrderLog::getCreateTime));
@@ -262,5 +361,10 @@ public class OrderServiceImpl implements OrderService {
                 new LambdaQueryWrapper<GoodsImage>().eq(GoodsImage::getGoodsId, goodsId)
                         .orderByAsc(GoodsImage::getSortOrder).last("LIMIT 1"));
         return img != null ? img.getImageUrl() : "";
+    }
+
+    private String getGoodsTitle(Long goodsId) {
+        Goods goods = goodsMapper.selectById(goodsId);
+        return goods != null ? goods.getTitle() : "";
     }
 }

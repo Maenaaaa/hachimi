@@ -204,10 +204,14 @@ onMounted(loadGoods)
             </NFormItem>
             <div v-if="formData.tradeType === 'SELL'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <NFormItem label="价格 (元)">
-                <NInput v-model:value="priceInput" placeholder="0.00" />
+                <NInput v-model:value="priceInput" placeholder="0.00"
+                  :input-props="{ inputmode: 'decimal' }"
+                  @input="(v: string) => { priceInput = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d{2})\d+/g, '$1') }" />
               </NFormItem>
               <NFormItem label="原价 (选填)">
-                <NInput v-model:value="originalPriceInput" placeholder="选填" />
+                <NInput v-model:value="originalPriceInput" placeholder="选填"
+                  :input-props="{ inputmode: 'decimal' }"
+                  @input="(v: string) => { originalPriceInput = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d{2})\d+/g, '$1') }" />
               </NFormItem>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

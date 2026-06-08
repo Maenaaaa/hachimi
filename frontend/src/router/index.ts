@@ -53,16 +53,17 @@ const routes: RouteRecordRaw[] = [
       { path: 'goods', name: 'AdminGoods', component: () => import('@/views/admin/GoodsManagementPage.vue') },
       { path: 'reports', name: 'AdminReports', component: () => import('@/views/admin/ReportManagementPage.vue') },
       { path: 'verifications', name: 'AdminVerifications', component: () => import('@/views/admin/VerificationManagementPage.vue') },
+      { path: 'disputes', name: 'AdminDisputes', component: () => import('@/views/admin/DisputeManagementPage.vue') },
       { path: 'announcements', name: 'AdminAnnouncements', component: () => import('@/views/admin/AnnouncementManagementPage.vue') },
     ],
   },
   {
     path: '/:pathMatch(.*)*',
-    name: 'NotFound',
     component: MainLayout,
     children: [
       {
         path: '',
+        name: 'NotFound',
         component: () => import('@/views/NotFound.vue'),
       },
     ],

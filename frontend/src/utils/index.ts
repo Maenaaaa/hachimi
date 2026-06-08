@@ -35,6 +35,10 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 
 export function getImageUrl(path: string | undefined | null): string {
   if (!path) return '/default-image.svg'
+  const minioMatch = path.match(/http:\/\/[^/]+\/([^/]+)\/([^?]+)/)
+  if (minioMatch) {
+    return `/api/file/${minioMatch[1]}/${minioMatch[2]}`
+  }
   if (path.startsWith('http')) return path
   return '/api' + path
 }

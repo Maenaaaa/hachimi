@@ -229,6 +229,7 @@ watch(
 
             <NDropdown trigger="click" :options="userMenuOptions" @select="handleUserMenuSelect">
               <NAvatar
+                :key="userStore.user?.avatar"
                 :src="userStore.user?.avatar || undefined"
                 :fallback-src="undefined"
                 size="small"

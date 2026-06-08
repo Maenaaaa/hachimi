@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { getUserProfile } from '@/api/user'
+import { getUserProfile, getUserPublicProfile } from '@/api/user'
 import { getMyGoods, getUserGoods } from '@/api/goods'
 import { getMyFavorites } from '@/api/favorite'
-import { getFollowers, getFollowing } from '@/api/follow'
+import { getFollowers, getFollowing, addFollow, removeFollow } from '@/api/follow'
 import { getUserReviews } from '@/api/review'
 import { formatPrice, formatDate } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import {
-  NAvatar, NButton, NCard, NTag, NTab, NTabPane, NTabs, NEmpty, NSpin,
+  NAvatar, NButton, NCard, NTag, NTab, NTabPane, NTabs, NEmpty, NSpin, NModal, NIcon, useMessage,
 } from 'naive-ui'
+import { Person24Filled } from '@vicons/fluent'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const message = useMessage()
 
 const profileUser = ref<any>(null)
 const tab = ref((route.query.tab as string) || 'goods')
@@ -25,13 +27,18 @@ const followers = ref<any[]>([])
 const following = ref<any[]>([])
 const reviews = ref<any[]>([])
 const loading = ref(true)
+const showFollowModal = ref(false)
+const followModalTitle = ref('')
+const followModalList = ref<any[]>([])
+const loadingFollowList = ref(false)
+const isFollowing = ref(false)
 
 const isOwnProfile = computed(() => {
   const userId = route.query.userId ? Number(route.query.userId) : null
   return !userId || userId === userStore.user?.id
 })
 
-const displayUser = computed(() => isOwnProfile.value ? userStore.user : profileUser.value)
+const displayUser = computed(() => profileUser.value || userStore.user)
 
 async function loadProfile() {
   loading.value = true
@@ -43,7 +50,11 @@ async function loadProfile() {
 
     if (userId) {
       promises.push(
-        getUserProfile().then((res: any) => { profileUser.value = res.data }).catch(() => {}),
+        getUserPublicProfile(userId).then((res: any) => { profileUser.value = res.data }).catch(() => {}),
+      )
+    } else if (userStore.user?.id) {
+      promises.push(
+        getUserPublicProfile(userStore.user.id).then((res: any) => { profileUser.value = res.data }).catch(() => {}),
       )
     }
 
@@ -57,8 +68,12 @@ async function loadProfile() {
     if (isOwnProfile.value) {
       promises.push(
         getMyFavorites().then((res: any) => { favorites.value = res.data || [] }).catch(() => {}),
-        getFollowers(targetUserId!).then((res: any) => { followers.value = res.data || [] }).catch(() => {}),
-        getFollowing(targetUserId!).then((res: any) => { following.value = res.data || [] }).catch(() => {}),
+      )
+    } else if (userId && userStore.isLoggedIn) {
+      promises.push(
+        getFollowing(userStore.user!.id, 1, 100).then((res: any) => {
+          isFollowing.value = (res.data || []).some((f: any) => f.id === userId)
+        }).catch(() => {}),
       )
     }
 
@@ -68,7 +83,63 @@ async function loadProfile() {
 
 function goToGoods(id: number) { router.push(`/goods/${id}`) }
 
+function getUserId(): number | null {
+  return route.query.userId ? Number(route.query.userId) : userStore.user?.id || null
+}
+
+async function showFollowers() {
+  const userId = getUserId()
+  if (!userId) return
+  followModalTitle.value = '粉丝列表'
+  showFollowModal.value = true
+  loadingFollowList.value = true
+  try {
+    const res = await getFollowers(userId)
+    followModalList.value = res.data || []
+  } catch { followModalList.value = [] }
+  finally { loadingFollowList.value = false }
+}
+
+async function showFollowing() {
+  const userId = getUserId()
+  if (!userId) return
+  followModalTitle.value = '关注列表'
+  showFollowModal.value = true
+  loadingFollowList.value = true
+  try {
+    const res = await getFollowing(userId)
+    followModalList.value = res.data || []
+  } catch { followModalList.value = [] }
+  finally { loadingFollowList.value = false }
+}
+
+function toggleFollow() {
+  const userId = getUserId()
+  if (!userId || !userStore.isLoggedIn) return
+  if (isFollowing.value) {
+    removeFollow(userId)
+      .then(() => {
+        isFollowing.value = false
+        if (displayUser.value) displayUser.value.followerCount = Math.max(0, (displayUser.value.followerCount || 1) - 1)
+        message.success('已取消关注')
+      })
+      .catch(() => message.error('操作失败'))
+  } else {
+    addFollow(userId)
+      .then(() => {
+        isFollowing.value = true
+        if (displayUser.value) displayUser.value.followerCount = (displayUser.value.followerCount || 0) + 1
+        message.success('已关注')
+      })
+      .catch(() => message.error('操作失败'))
+  }
+}
+
 onMounted(loadProfile)
+
+watch(() => route.query.userId, () => {
+  loadProfile()
+})
 </script>
 
 <template>
@@ -77,7 +148,8 @@ onMounted(loadProfile)
       <NCard :bordered="true" style="border-radius: 12px" class="mb-6">
         <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
           <NAvatar
-            :src="displayUser?.avatar || undefined"
+            :key="displayUser?.avatar"
+            :src="getImageUrl(displayUser?.avatar || undefined)"
             :size="80" round
             style="background-color: #3B82F6; font-size: 32px"
           >{{ displayUser?.nickname?.charAt(0) || 'U' }}</NAvatar>
@@ -90,13 +162,22 @@ onMounted(loadProfile)
             <p class="text-sm text-gray-500 mt-1">信用分: {{ displayUser?.creditScore || 5.0 }}</p>
             <div class="flex gap-6 mt-3 justify-center sm:justify-start text-sm">
               <span><b>{{ displayUser?.goodsCount || 0 }}</b> 商品</span>
-              <span><b>{{ displayUser?.followerCount || 0 }}</b> 粉丝</span>
-              <span><b>{{ displayUser?.followingCount || 0 }}</b> 关注</span>
+              <span class="cursor-pointer hover:text-[#3B82F6]" @click="showFollowers"><b>{{ displayUser?.followerCount || 0 }}</b> 粉丝</span>
+              <span class="cursor-pointer hover:text-[#3B82F6]" @click="showFollowing"><b>{{ displayUser?.followingCount || 0 }}</b> 关注</span>
             </div>
           </div>
           <div v-if="isOwnProfile" class="flex gap-2 shrink-0">
             <NButton size="small" @click="router.push('/settings')">编辑资料</NButton>
             <NButton size="small" @click="router.push('/my-goods')">我的商品</NButton>
+          </div>
+          <div v-else-if="userStore.isLoggedIn" class="shrink-0">
+            <NButton
+              :type="isFollowing ? 'default' : 'primary'"
+              size="small"
+              @click="toggleFollow"
+            >
+              {{ isFollowing ? '已关注' : '+ 关注' }}
+            </NButton>
           </div>
         </div>
       </NCard>
@@ -109,7 +190,8 @@ onMounted(loadProfile)
                 <img :src="item.coverImage || ''" class="w-full h-28 object-cover rounded-lg" />
                 <NTag v-if="item.status" size="tiny" class="mt-1">{{ GOODS_STATUS[item.status] || item.status }}</NTag>
                 <div class="text-sm font-semibold mt-1 truncate">{{ item.title }}</div>
-                <div class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(item.price) }}</div>
+                <div v-if="item.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(item.price) }}</div>
+                <div v-else class="text-green-600 font-bold text-xs">🔄 仅置换</div>
               </div>
             </div>
             <NEmpty v-else description="暂无商品" class="mt-4" />
@@ -120,7 +202,8 @@ onMounted(loadProfile)
               <div v-for="fav in favorites" :key="fav.id" class="cursor-pointer" @click="goToGoods(fav.id)">
                 <img :src="fav.coverImage || ''" class="w-full h-28 object-cover rounded-lg" />
                 <div class="text-sm font-semibold mt-1 truncate">{{ fav.title }}</div>
-                <div class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(fav.price) }}</div>
+                <div v-if="fav.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(fav.price) }}</div>
+                <div v-else class="text-green-600 font-bold text-xs">🔄 仅置换</div>
               </div>
             </div>
             <NEmpty v-else description="暂无收藏" class="mt-4" />
@@ -162,5 +245,25 @@ onMounted(loadProfile)
         </NTabs>
       </NCard>
     </NSpin>
+
+    <!-- Followers/Following Modal -->
+    <NModal v-model:show="showFollowModal" :title="followModalTitle" preset="card" style="width: 400px; border-radius: 12px; max-height: 70vh;">
+      <NSpin :show="loadingFollowList">
+        <div v-if="followModalList.length > 0" class="space-y-2 max-h-80 overflow-y-auto">
+          <div v-for="u in followModalList" :key="u.id"
+            class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50"
+            @click="showFollowModal = false; router.push('/profile?userId=' + u.id)">
+            <NAvatar :src="u.avatar || undefined" :size="36" round style="background-color: #3B82F6">
+              {{ u.nickname?.charAt(0) || 'U' }}
+            </NAvatar>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold truncate">{{ u.nickname }}</div>
+              <div class="text-xs text-gray-400">{{ u.school || '' }}</div>
+            </div>
+          </div>
+        </div>
+        <NEmpty v-else description="暂无数据" />
+      </NSpin>
+    </NModal>
   </div>
 </template>

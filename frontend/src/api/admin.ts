@@ -73,3 +73,11 @@ export function rejectVerification(id: number, reason?: string) {
 export function searchGoods(keyword: string) {
   return get<Goods[]>('/search', { keyword } as Record<string, unknown>)
 }
+
+export function getAdminDisputes(params: { page: number; size: number; status?: string }) {
+  return get<PageResult<any>>('/admin/dispute', params as Record<string, unknown>)
+}
+
+export function handleDispute(id: number, status: string, handleNote?: string) {
+  return put<null>(`/admin/dispute/${id}/handle`, { status, handleNote })
+}

@@ -8,6 +8,7 @@ import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.FollowMapper;
 import com.campus.exchange.mapper.UserMapper;
 import com.campus.exchange.service.FollowService;
+import com.campus.exchange.service.NotificationService;
 import com.campus.exchange.vo.UserPublicVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class FollowServiceImpl implements FollowService {
 
     private final FollowMapper followMapper;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
 
     @Override
     public void follow(Long followerId, Long followeeId) {
@@ -32,6 +34,11 @@ public class FollowServiceImpl implements FollowService {
         f.setFollowerId(followerId);
         f.setFolloweeId(followeeId);
         followMapper.insert(f);
+
+        User follower = userMapper.selectById(followerId);
+        String name = follower != null ? follower.getNickname() : "用户";
+        notificationService.create(followeeId, "SYSTEM", "新粉丝",
+                name + " 关注了你", null);
     }
 
     @Override

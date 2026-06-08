@@ -77,7 +77,7 @@ onMounted(() => {
   }
 })
 
-async function handleAvatarUpload({ file }: { file: UploadFileInfo }) {
+async function handleAvatarUpload({ file, onFinish, onError }: { file: UploadFileInfo; onFinish: () => void; onError: () => void }) {
   if (!file.file) return
   const fd = new FormData()
   fd.append('file', file.file)
@@ -85,8 +85,10 @@ async function handleAvatarUpload({ file }: { file: UploadFileInfo }) {
   try {
     await userStore.uploadAvatar(fd)
     message.success('头像更新成功')
+    onFinish()
   } catch {
     message.error('头像上传失败')
+    onError()
   }
 }
 
@@ -159,6 +161,7 @@ async function handleVerify() {
       <div class="flex items-center gap-6">
         <div class="relative group">
           <NAvatar
+            :key="userStore.user?.avatar"
             :src="getImageUrl(userStore.user?.avatar)"
             :size="72"
             round

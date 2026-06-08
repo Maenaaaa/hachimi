@@ -10,6 +10,9 @@ public interface OrderService {
     OrderVO confirm(Long orderId, Long sellerId);
     OrderVO cancel(Long orderId, Long buyerId);
     OrderVO complete(Long orderId, Long buyerId);
+    OrderVO requestCancel(Long orderId, Long userId, String reason);
+    OrderVO approveCancel(Long orderId, Long userId);
+    OrderVO rejectCancel(Long orderId, Long userId);
     List<OrderVO> getBuyerOrders(Long userId, String status, int page, int size);
     List<OrderVO> getSellerOrders(Long userId, String status, int page, int size);
     OrderDetailVO getDetail(Long orderId, Long userId);

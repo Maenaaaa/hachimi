@@ -192,7 +192,8 @@ function goToGoods(id: number) {
                   </NTag>
                 </div>
                 <h4 class="text-sm font-semibold text-gray-800 mt-2 truncate">{{ goods.title }}</h4>
-                <p class="text-[#3B82F6] font-bold text-base mt-1">{{ formatPrice(goods.price) }}</p>
+                <p v-if="goods.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-base mt-1">{{ formatPrice(goods.price) }}</p>
+                <p v-else class="text-green-600 font-bold text-sm mt-1">🔄 仅置换</p>
                 <div class="flex items-center justify-between mt-1">
                   <div class="flex items-center gap-1">
                     <NAvatar
@@ -250,7 +251,8 @@ function goToGoods(id: number) {
                   </NTag>
                 </div>
                 <h4 class="text-sm font-semibold text-gray-800 mt-2 truncate">{{ goods.title }}</h4>
-                <p class="text-[#3B82F6] font-bold text-base mt-1">{{ formatPrice(goods.price) }}</p>
+                <p v-if="goods.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-base mt-1">{{ formatPrice(goods.price) }}</p>
+                <p v-else class="text-green-600 font-bold text-sm mt-1">🔄 仅置换</p>
                 <div class="flex items-center justify-between mt-1">
                   <div class="flex items-center gap-1">
                     <NAvatar

@@ -5,6 +5,10 @@ export function getUserProfile() {
   return get<User>('/user/profile')
 }
 
+export function getUserPublicProfile(userId: number) {
+  return get<User>(`/user/profile/${userId}`)
+}
+
 export function updateUserProfile(data: ProfileForm) {
   return put<User>('/user/profile', data)
 }

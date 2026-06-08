@@ -23,7 +23,7 @@ export function getGoodsDetail(id: number) {
 }
 
 export function getMyGoods() {
-  return get<any[]>('/goods/my')
+  return get<any[]>('/goods/my', { page: 1, size: 200 } as Record<string, unknown>)
 }
 
 export function getUserGoods(userId: number) {

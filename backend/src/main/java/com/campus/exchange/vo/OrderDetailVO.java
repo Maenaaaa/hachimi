@@ -9,4 +9,8 @@ import java.util.List;
 public class OrderDetailVO extends OrderVO {
     private String goodsDescription;
     private List<OrderLogVO> logs;
+    private String cancelReason;
+    private Long cancelRequesterId;
+    private String cancelRequesterName;
+    private java.time.LocalDateTime cancelRequestTime;
 }

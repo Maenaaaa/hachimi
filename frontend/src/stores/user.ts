@@ -64,10 +64,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function uploadAvatar(formData: FormData) {
     const res = await userApi.uploadAvatar(formData)
-    if (user.value) {
-      user.value.avatar = res.data
-      localStorage.setItem(USER_KEY, JSON.stringify(user.value))
-    }
+    await fetchProfile()
     return res
   }
 

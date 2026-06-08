@@ -28,3 +28,19 @@ export function completeOrder(id: number) {
 export function getOrderDetail(id: number) {
   return get<Order>(`/order/${id}`)
 }
+
+export function requestCancelOrder(id: number, reason: string) {
+  return put<Order>(`/order/${id}/cancel-request`, { reason })
+}
+
+export function approveCancelOrder(id: number) {
+  return put<Order>(`/order/${id}/cancel-approve`)
+}
+
+export function rejectCancelOrder(id: number) {
+  return put<Order>(`/order/${id}/cancel-reject`)
+}
+
+export function createDispute(id: number, reason: string) {
+  return put<null>(`/order/${id}/dispute`, { reason })
+}

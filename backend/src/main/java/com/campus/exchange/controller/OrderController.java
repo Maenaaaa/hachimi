@@ -5,6 +5,7 @@ import com.campus.exchange.dto.CreateOrderDTO;
 import com.campus.exchange.entity.User;
 import com.campus.exchange.security.CurrentUser;
 import com.campus.exchange.service.OrderService;
+import com.campus.exchange.service.DisputeService;
 import com.campus.exchange.vo.OrderDetailVO;
 import com.campus.exchange.vo.OrderVO;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/order")
@@ -19,6 +21,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final DisputeService disputeService;
 
     @PostMapping
     public Result<OrderVO> create(@CurrentUser User user, @Valid @RequestBody CreateOrderDTO dto) {
@@ -33,6 +36,22 @@ public class OrderController {
     @PutMapping("/{id}/cancel")
     public Result<OrderVO> cancel(@CurrentUser User user, @PathVariable Long id) {
         return Result.ok(orderService.cancel(id, user.getId()));
+    }
+
+    @PutMapping("/{id}/cancel-request")
+    public Result<OrderVO> requestCancel(@CurrentUser User user, @PathVariable Long id,
+                                          @RequestBody java.util.Map<String, String> body) {
+        return Result.ok(orderService.requestCancel(id, user.getId(), body.get("reason")));
+    }
+
+    @PutMapping("/{id}/cancel-approve")
+    public Result<OrderVO> approveCancel(@CurrentUser User user, @PathVariable Long id) {
+        return Result.ok(orderService.approveCancel(id, user.getId()));
+    }
+
+    @PutMapping("/{id}/cancel-reject")
+    public Result<OrderVO> rejectCancel(@CurrentUser User user, @PathVariable Long id) {
+        return Result.ok(orderService.rejectCancel(id, user.getId()));
     }
 
     @PutMapping("/{id}/complete")
@@ -59,5 +78,12 @@ public class OrderController {
     @GetMapping("/{id}")
     public Result<OrderDetailVO> getDetail(@CurrentUser User user, @PathVariable Long id) {
         return Result.ok(orderService.getDetail(id, user.getId()));
+    }
+
+    @PutMapping("/{id}/dispute")
+    public Result<Void> createDispute(@CurrentUser User user, @PathVariable Long id,
+                                       @RequestBody Map<String, String> body) {
+        disputeService.create(id, user.getId(), body.get("reason"));
+        return Result.ok();
     }
 }

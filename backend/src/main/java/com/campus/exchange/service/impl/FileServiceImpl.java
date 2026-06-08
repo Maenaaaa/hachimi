@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
+
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -84,5 +86,14 @@ public class FileServiceImpl implements FileService {
         if (!exists) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
         }
+    }
+
+    @Override
+    @SneakyThrows
+    public InputStream getObject(String bucket, String objectKey) {
+        return minioClient.getObject(GetObjectArgs.builder()
+                .bucket(bucket)
+                .object(objectKey)
+                .build());
     }
 }

@@ -49,6 +49,7 @@ const menuOptions = [
   { label: '商品管理', key: '/admin/goods', icon: () => h(NIcon, null, { default: () => h(Gift24Filled) }) },
   { label: '举报管理', key: '/admin/reports', icon: () => h(NIcon, null, { default: () => h(Warning24Filled) }) },
   { label: '认证审核', key: '/admin/verifications', icon: () => h(NIcon, null, { default: () => h(Person24Filled) }) },
+  { label: '仲裁管理', key: '/admin/disputes', icon: () => h(NIcon, null, { default: () => h(Warning24Filled) }) },
   { label: '公告管理', key: '/admin/announcements', icon: () => h(NIcon, null, { default: () => h(Megaphone24Filled) }) },
 ]
 

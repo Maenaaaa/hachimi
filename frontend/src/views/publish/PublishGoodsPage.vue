@@ -81,8 +81,11 @@ const rules = {
       required: true, message: '请输入价格', trigger: 'blur',
       validator: (_rule: unknown, value: string) => {
         if (formData.value.tradeType === 'EXCHANGE') return true
+        if (!value) return false
         const n = Number(value)
-        return !isNaN(n) && n > 0
+        if (isNaN(n) || n <= 0) return false
+        const decimals = value.includes('.') ? value.split('.')[1].length : 0
+        return decimals <= 2
       },
     },
   ],
@@ -223,6 +226,8 @@ async function handleSubmit() {
               <NInput
                 v-model:value="priceInput"
                 placeholder="0.00"
+                :input-props="{ inputmode: 'decimal' }"
+                @input="(v: string) => { priceInput = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d{2})\d+/g, '$1') }"
               />
             </NFormItem>
 
@@ -230,6 +235,8 @@ async function handleSubmit() {
               <NInput
                 v-model:value="originalPriceInput"
                 placeholder="选填"
+                :input-props="{ inputmode: 'decimal' }"
+                @input="(v: string) => { originalPriceInput = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d{2})\d+/g, '$1') }"
               />
             </NFormItem>
           </div>
@@ -271,11 +278,8 @@ async function handleSubmit() {
           accept="image/*"
           list-type="image-card"
           @remove="handleImageRemove"
+          class="publish-upload"
         >
-          <NButton v-if="uploadedFiles.length < 9">
-            <template #icon><NIcon><Image24Filled /></NIcon></template>
-            上传图片
-          </NButton>
         </NUpload>
       </div>
 
@@ -355,5 +359,13 @@ async function handleSubmit() {
 <style scoped>
 .max-w-700px {
   max-width: 700px;
+}
+.publish-upload :deep(.n-upload-file-list) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+.publish-upload :deep(.n-upload-dragger) {
+  border-radius: 12px;
 }
 </style>

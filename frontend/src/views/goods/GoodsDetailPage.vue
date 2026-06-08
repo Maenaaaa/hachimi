@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getGoodsDetail, toggleGoodsStatus, deleteGoods } from '@/api/goods'
+import { getGoodsDetail, toggleGoodsStatus, deleteGoods, getMyGoods } from '@/api/goods'
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import { addFollow, removeFollow } from '@/api/follow'
 import { createOrder } from '@/api/order'
@@ -83,6 +83,7 @@ async function fetchData() {
     const goodsRes = await getGoodsDetail(goodsId.value)
     goods.value = goodsRes.data
     isFavorited.value = goodsRes.data.isFavorited
+    isFollowing.value = goodsRes.data.isFollowed
     if (goodsRes.data.id) {
       try {
         const commentRes = await getComments(goodsRes.data.id)
@@ -162,8 +163,14 @@ async function handleBuy() {
   if (goods.value?.tradeType === 'EXCHANGE') {
     try {
       const res = await getMyGoods()
-      myExchangeGoods.value = (res.data || []).filter((g: any) => g.status === 'ACTIVE' && g.id !== goods.value?.id)
-    } catch { myExchangeGoods.value = [] }
+      const allGoods = (Array.isArray(res.data) ? res.data : (res as any)?.data?.data || []) as any[]
+      myExchangeGoods.value = allGoods.filter((g: any) =>
+        g.status === 'ACTIVE' && g.id !== goods.value?.id)
+      console.log('myGoods:', allGoods.length, 'filtered:', myExchangeGoods.value.length)
+    } catch (e: any) {
+      console.error('加载我的商品失败:', e?.message || e)
+      myExchangeGoods.value = []
+    }
   }
   showBuyModal.value = true
 }
@@ -561,19 +568,24 @@ onMounted(fetchData)
               <img :src="g.coverImage || ''" class="w-12 h-12 object-cover rounded-lg shrink-0" />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-semibold truncate">{{ g.title }}</div>
-                <div class="text-xs text-gray-400">{{ g.status === 'ACTIVE' ? '在售' : '已下架' }}</div>
+                <div v-if="g.tradeType !== 'EXCHANGE'" class="text-xs text-[#3B82F6] font-bold">{{ formatPrice(g.price || 0) }}</div>
+                <div v-else class="text-xs text-green-600">仅置换</div>
               </div>
               <div v-if="exchangeOfferId === g.id" class="text-[#3B82F6] font-bold text-sm">✓</div>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">你还没有在售商品，请先去发布一个可置换的商品</p>
+          <p v-else class="text-xs text-gray-400 mb-2">你还没有可置换的商品</p>
+          <NButton size="small" text type="primary" class="mt-1" @click="showBuyModal = false; router.push('/publish')">
+            + 发布新商品用于置换
+          </NButton>
         </div>
 
         <NInput v-model:value="meetTime" placeholder="约定交易时间，如：周五下午3点" />
         <NInput v-model:value="meetPlace" placeholder="约定交易地点，如：图书馆门口" />
         <NInput v-model:value="buyMessage" type="textarea" placeholder="给对方留言（选填）" :rows="2" />
 
-        <NButton type="primary" block :loading="submitting" :disabled="goods?.tradeType === 'EXCHANGE' && !exchangeOfferId && myExchangeGoods.length > 0"
+        <NButton type="primary" block :loading="submitting"
+          :disabled="goods?.tradeType === 'EXCHANGE' && !exchangeOfferId"
           @click="submitOrder">
           {{ goods?.tradeType === 'EXCHANGE' ? '发起置换' : '确认购买' }}
         </NButton>

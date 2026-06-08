@@ -147,11 +147,13 @@ onMounted(() => {
           <span class="text-sm text-gray-500">价格：</span>
           <NInput :value="minPrice !== null ? String(minPrice) : ''" placeholder="最低价"
             style="width: 100px" size="small"
-            @update:value="(v: string) => { minPrice = v ? Number(v) : null }" />
+            :input-props="{ inputmode: 'decimal', pattern: '[0-9]*\\.?[0-9]{0,2}' }"
+            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); minPrice = n ? Number(parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n) || null : null }" />
           <span class="text-gray-400">-</span>
           <NInput :value="maxPrice !== null ? String(maxPrice) : ''" placeholder="最高价"
             style="width: 100px" size="small"
-            @update:value="(v: string) => { maxPrice = v ? Number(v) : null }" />
+            :input-props="{ inputmode: 'decimal', pattern: '[0-9]*\\.?[0-9]{0,2}' }"
+            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); maxPrice = n ? Number(parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n) || null : null }" />
           <NButton size="small" @click="handleSearch">确定</NButton>
         </div>
 

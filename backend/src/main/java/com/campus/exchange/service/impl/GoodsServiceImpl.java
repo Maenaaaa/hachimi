@@ -125,8 +125,10 @@ public class GoodsServiceImpl implements GoodsService {
     public GoodsDetailVO getDetail(Long goodsId, Long currentUserId) {
         Goods goods = goodsMapper.selectById(goodsId);
         if (goods == null || goods.getDeleted() == 1) throw new BusinessException(404, "商品不存在或已下架");
-        if (!"ACTIVE".equals(goods.getStatus()) && !"SOLD".equals(goods.getStatus()) &&
-                !goods.getUserId().equals(currentUserId)) throw new BusinessException(404, "商品不存在或已下架");
+        if (!goods.getUserId().equals(currentUserId) &&
+                !"ACTIVE".equals(goods.getStatus()) && !"SOLD".equals(goods.getStatus()) && !"INACTIVE".equals(goods.getStatus())) {
+            throw new BusinessException(404, "商品不存在或已下架");
+        }
 
         User seller = userMapper.selectById(goods.getUserId());
         Category category = categoryMapper.selectById(goods.getCategoryId());

@@ -19,6 +19,9 @@ public class Order {
     private String remark;
     private String meetTime;
     private String meetPlace;
+    private String cancelReason;
+    private Long cancelRequesterId;
+    private LocalDateTime cancelRequestTime;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

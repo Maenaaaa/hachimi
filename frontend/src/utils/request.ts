@@ -156,6 +156,7 @@ export function upload<T>(url: string, formData: FormData): Promise<ApiResponse<
   return request
     .post<ApiResponse<T>>(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      transformRequest: [(data: FormData) => data],
     })
     .then((res) => res.data)
 }
