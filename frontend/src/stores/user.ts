@@ -51,7 +51,7 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
-  async function updateProfile(data: { nickname: string; email: string; phone: string }) {
+  async function updateProfile(data: { nickname: string; email: string; phone: string; school: string }) {
     const res = await userApi.updateUserProfile(data)
     user.value = res.data
     localStorage.setItem(USER_KEY, JSON.stringify(res.data))

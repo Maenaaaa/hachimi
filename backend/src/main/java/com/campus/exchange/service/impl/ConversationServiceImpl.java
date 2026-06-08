@@ -76,6 +76,8 @@ public class ConversationServiceImpl implements ConversationService {
                 new LambdaQueryWrapper<GoodsImage>().eq(GoodsImage::getGoodsId, conv.getGoodsId())
                         .orderByAsc(GoodsImage::getSortOrder).last("LIMIT 1"));
         vo.setGoodsCoverImage(firstImg != null ? firstImg.getImageUrl() : "");
+        vo.setGoodsPrice(goods != null ? goods.getPrice() : null);
+        vo.setGoodsTradeType(goods != null ? goods.getTradeType() : null);
 
         vo.setLastMessage(conv.getLastMessage());
         vo.setLastMessageTime(conv.getLastMessageTime());

@@ -7,9 +7,10 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import { formatDate } from '@/utils'
 import { upload } from '@/utils/request'
 import {
-  NButton, NInput, NAvatar, NBadge, NSpin, NEmpty, NIcon, NImage, useMessage,
+  NButton, NInput, NAvatar, NBadge, NSpin, NEmpty, NIcon, NImage, NCard, useMessage,
 } from 'naive-ui'
 import { Send24Filled, Chat24Filled, Gift24Filled, Image24Filled } from '@vicons/fluent'
+import { getImageUrl, formatPrice } from '@/utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +52,7 @@ async function loadMessages() {
 
 function selectConv(id: number) {
   activeConvId.value = id
+  router.replace({ path: '/chat', query: { convId: String(id) } })
   loadMessages()
   // Resubscribe to specific conversation topic
   if (currentSub) currentSub.unsubscribe()
@@ -151,10 +153,13 @@ function onWsMessage(body: string) {
   } catch { /* ignore */ }
 }
 
-onMounted(() => {
+onMounted(async () => {
   connect()
-  loadConversations()
-  if (route.query.goodsId) {
+  await loadConversations()
+  const convId = route.query.convId ? Number(route.query.convId) : null
+  if (convId && conversations.value.some(c => c.id === convId)) {
+    selectConv(convId)
+  } else if (route.query.goodsId) {
     startChat()
   }
 })
@@ -211,10 +216,30 @@ watch(connected, (val) => { if (val) loadConversations() })
             <NAvatar :src="activeConv.otherUserAvatar || undefined" :size="36" round style="background-color: #3B82F6">
               {{ activeConv.otherUserNickname?.charAt(0) || 'U' }}
             </NAvatar>
-            <div>
+            <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm">{{ activeConv.otherUserNickname }}</div>
               <div class="text-xs text-gray-400">{{ activeConv.goodsTitle }}</div>
             </div>
+          </div>
+
+          <!-- Goods Card -->
+          <div v-if="activeConv.goodsId"
+            class="px-4 py-3 dark:border-gray-700 border-b border-gray-100 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
+            @click="router.push(`/goods/${activeConv.goodsId}`)">
+            <img
+              v-if="activeConv.goodsCoverImage"
+              :src="getImageUrl(activeConv.goodsCoverImage)"
+              class="w-12 h-12 object-cover rounded-lg shrink-0"
+            />
+            <div class="flex-1 min-w-0">
+              <div class="text-xs text-gray-400 mb-0.5">💬 关于以下商品的对话</div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-gray-800 truncate">{{ activeConv.goodsTitle }}</span>
+                <span v-if="activeConv.goodsTradeType === 'EXCHANGE'" class="text-xs text-green-600 shrink-0">仅置换</span>
+                <span v-else-if="activeConv.goodsPrice != null" class="text-sm text-[#3B82F6] font-bold shrink-0">{{ formatPrice(activeConv.goodsPrice) }}</span>
+              </div>
+            </div>
+            <NIcon size="16" class="text-gray-400 shrink-0"><Gift24Filled /></NIcon>
           </div>
 
           <div ref="msgContainer" class="flex-1 overflow-y-auto p-4 dark:bg-gray-900 bg-gray-50">

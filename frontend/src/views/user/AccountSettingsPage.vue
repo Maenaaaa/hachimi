@@ -39,6 +39,7 @@ const profileForm = ref<ProfileForm>({
   nickname: '',
   email: '',
   phone: '',
+  school: '',
 })
 
 const passwordForm = ref<PasswordForm>({
@@ -73,6 +74,7 @@ onMounted(() => {
       nickname: userStore.user.nickname,
       email: userStore.user.email || '',
       phone: userStore.user.phone || '',
+      school: (userStore.user as any).school || '',
     }
   }
 })
@@ -198,6 +200,9 @@ async function handleVerify() {
         </NFormItem>
         <NFormItem label="手机号">
           <NInput v-model:value="profileForm.phone" placeholder="手机号" />
+        </NFormItem>
+        <NFormItem label="学校">
+          <NInput v-model:value="profileForm.school" placeholder="学校名称" />
         </NFormItem>
         <NButton type="primary" :loading="saving" @click="saveProfile">保存</NButton>
       </NForm>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getAdminGoods, approveGoods, rejectGoods, takeDownGoods } from '@/api/admin'
 import { formatPrice, formatDate, getImageUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
@@ -24,6 +25,7 @@ import {
 
 const message = useMessage()
 const dialog = useDialog()
+const router = useRouter()
 
 const goodsList = ref<Goods[]>([])
 const loading = ref(true)
@@ -129,8 +131,11 @@ const columns: DataTableColumn<any>[] = [
     key: 'title',
     width: 220,
     render(row) {
-      return h('div', { class: 'flex items-center gap-3' }, [
-        h('img', { src: row.coverImage || '', class: 'w-12 h-12 object-cover rounded-lg' }),
+      return h('div', {
+        class: 'flex items-center gap-3 cursor-pointer hover:text-[#3B82F6]',
+        onClick: () => window.open(`/goods/${row.id}`, '_blank'),
+      }, [
+        h('img', { src: getImageUrl(row.coverImage) || '', class: 'w-12 h-12 object-cover rounded-lg' }),
         h('div', null, [
           h('div', { class: 'text-sm font-semibold truncate max-w-150px' }, row.title),
           h('div', { class: 'text-xs text-gray-400' }, row.categoryName),
@@ -155,10 +160,21 @@ const columns: DataTableColumn<any>[] = [
     },
   },
   {
+    title: '交易方式',
+    key: 'tradeType',
+    width: 80,
+    render(row) {
+      return h(NTag, { type: row.tradeType === 'EXCHANGE' ? 'success' : 'info', size: 'small' }, {
+        default: () => row.tradeType === 'EXCHANGE' ? '置换' : '出售',
+      })
+    },
+  },
+  {
     title: '价格',
     key: 'price',
     width: 100,
     render(row) {
+      if (row.tradeType === 'EXCHANGE') return h('span', { class: 'text-green-600 text-sm' }, '仅置换')
       return h('span', { class: 'text-[#3B82F6] font-bold' }, formatPrice(row.price))
     },
   },

@@ -228,6 +228,7 @@ export interface ProfileForm {
   nickname: string
   email: string
   phone: string
+  school: string
 }
 
 /** 修改密码表单 */

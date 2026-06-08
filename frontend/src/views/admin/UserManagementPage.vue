@@ -59,17 +59,17 @@ function handleSearch() {
 function handleDisable(user: User) {
   dialog.warning({
     title: '确认操作',
-    content: `确定要${user.status === 'disabled' ? '启用' : '禁用'}用户 "${user.nickname}" 吗？`,
+    content: `确定要${user.status === 'DISABLED' ? '启用' : '禁用'}用户 "${user.nickname}" 吗？`,
     positiveText: '确定',
     negativeText: '取消',
     onPositiveClick: async () => {
       try {
-        if (user.status === 'disabled') {
+        if (user.status === 'DISABLED') {
           await enableUser(user.id)
         } else {
           await disableUser(user.id)
         }
-        message.success(`${user.status === 'disabled' ? '启用' : '禁用'}成功`)
+        message.success(`${user.status === 'DISABLED' ? '启用' : '禁用'}成功`)
         loadUsers()
       } catch {
         message.error('操作失败')
@@ -149,9 +149,9 @@ const columns: DataTableColumn<User>[] = [
           h(NButton, {
             size: 'tiny',
             quaternary: true,
-            type: (row.status === 'disabled' ? 'success' : 'error') as 'success' | 'error',
+            type: (row.status === 'DISABLED' ? 'success' : 'error') as 'success' | 'error',
             onClick: () => handleDisable(row),
-          }, { default: () => row.status === 'disabled' ? '启用' : '禁用' }),
+          }, { default: () => row.status === 'DISABLED' ? '启用' : '禁用' }),
         ],
       })
     },

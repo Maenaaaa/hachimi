@@ -78,6 +78,13 @@ request.interceptors.response.use(
       if (url.includes('/auth/login') || url.includes('/auth/register')) {
         return Promise.reject(new Error(data.message || '用户名或密码错误'))
       }
+      // Account disabled — force logout immediately
+      if (data.message && data.message.includes('禁用')) {
+        clearTokens()
+        alert(data.message)
+        window.location.href = '/login'
+        return Promise.reject(new Error(data.message))
+      }
       const originalRequest = response.config as InternalAxiosRequestConfig & { _retry?: boolean }
       if (!originalRequest._retry) {
         originalRequest._retry = true
@@ -127,9 +134,10 @@ request.interceptors.response.use(
     if (error.response?.status === 401) {
       const url = error.config?.url || ''
       if (url.includes('/auth/login') || url.includes('/auth/register')) {
-        return Promise.reject(new Error('用户名或密码错误'))
+        return Promise.reject(new Error(error.response?.data?.message || '用户名或密码错误'))
       }
       clearTokens()
+      alert(error.response?.data?.message || '登录已过期，请重新登录')
       window.location.href = '/login'
     }
     return Promise.reject(error)

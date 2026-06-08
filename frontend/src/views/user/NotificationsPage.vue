@@ -54,7 +54,7 @@ onMounted(load)
 <template>
   <div class="max-w-700px mx-auto pb-8">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-bold text-gray-800">消息通知</h2>
+      <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">消息通知</h2>
       <NButton size="small" quaternary @click="handleMarkAll">全部已读</NButton>
     </div>
 
@@ -62,16 +62,16 @@ onMounted(load)
       <div v-if="notifications.length > 0" class="space-y-2">
         <div v-for="n in notifications" :key="n.id"
           class="p-4 rounded-xl cursor-pointer transition-colors border"
-          :class="n.isRead ? 'bg-white border-gray-100' : 'bg-[#EFF6FF] border-[#BFDBFE]'"
+          :class="n.isRead ? 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700' : 'bg-[#EFF6FF] dark:bg-blue-900/30 border-[#BFDBFE] dark:border-blue-700/50'"
           @click="handleClick(n)">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: typeColors[n.type] || '#999' }" />
-            <span class="font-semibold text-sm flex-1">{{ n.title }}</span>
+            <span class="font-semibold text-sm flex-1 text-gray-800 dark:text-gray-100">{{ n.title }}</span>
             <span v-if="!n.isRead" class="w-2 h-2 bg-[#3B82F6] rounded-full shrink-0" />
             <NTag size="tiny">{{ typeLabels[n.type] || n.type }}</NTag>
           </div>
-          <p class="text-sm text-gray-500 mt-1 ml-4">{{ n.content }}</p>
-          <span class="text-xs text-gray-400 mt-1 ml-4 block">{{ formatDate(n.createTime) }}</span>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-4">{{ n.content }}</p>
+          <span class="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-4 block">{{ formatDate(n.createTime) }}</span>
         </div>
       </div>
       <NEmpty v-else description="暂无通知" class="mt-10" />
