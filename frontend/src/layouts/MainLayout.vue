@@ -40,7 +40,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const appStore = useAppStore()
-const { subscribe, connect } = useWebSocket()
+const { subscribe, connect, connected } = useWebSocket()
 
 const userAvatarUrl = computed(() => {
   return getAvatarUrl(userStore.user?.avatar, 'original')

@@ -30,9 +30,11 @@ import {
   NStatistic,
   NGrid,
   NGi,
+  NDatePicker,
   useMessage,
   useDialog,
 } from 'naive-ui'
+import { zhCN, dateZhCN } from 'naive-ui'
 import {
   Heart24Filled,
   Heart24Regular,
@@ -60,6 +62,7 @@ const isFollowing = ref(false)
 const showBuyModal = ref(false)
 const buyMessage = ref('')
 const meetTime = ref('')
+const meetTimeTs = ref<number | null>(null)
 const meetPlace = ref('')
 const exchangeOfferId = ref<number | null>(null)
 const myExchangeGoods = ref<any[]>([])
@@ -179,17 +182,28 @@ async function submitOrder() {
   if (!goods.value) return
   submitting.value = true
   try {
+    // 格式化时间
+    let formattedTime = ''
+    if (meetTimeTs.value) {
+      const d = new Date(meetTimeTs.value)
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const h = String(d.getHours()).padStart(2, '0')
+      const min = String(d.getMinutes()).padStart(2, '0')
+      formattedTime = `${y}-${m}-${day} ${h}:${min}`
+    }
     await createOrder({
       goodsId: goods.value.id,
       exchangeGoodsId: goods.value.tradeType === 'EXCHANGE' ? exchangeOfferId.value : undefined,
       remark: buyMessage.value,
-      meetTime: meetTime.value,
+      meetTime: formattedTime,
       meetPlace: meetPlace.value,
     })
     message.success(goods.value.tradeType === 'EXCHANGE' ? '置换请求已发送，等待对方确认' : '下单成功，等待卖家确认')
     showBuyModal.value = false
     buyMessage.value = ''
-    meetTime.value = ''
+    meetTimeTs.value = null
     meetPlace.value = ''
     exchangeOfferId.value = null
   } catch (err: unknown) {
@@ -572,7 +586,8 @@ onMounted(fetchData)
           </NButton>
         </div>
 
-        <NInput v-model:value="meetTime" placeholder="约定交易时间，如：周五下午3点" />
+        <NDatePicker v-model:value="meetTimeTs" type="datetime" clearable placeholder="约定交易时间" 
+          style="width: 100%" input-readonly format="yyyy-MM-dd HH:mm" />
         <NInput v-model:value="meetPlace" placeholder="约定交易地点，如：图书馆门口" />
         <NInput v-model:value="buyMessage" type="textarea" placeholder="给对方留言（选填）" :rows="2" />
 

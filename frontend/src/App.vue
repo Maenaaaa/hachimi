@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme } from 'naive-ui'
+import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme, zhCN, dateZhCN } from 'naive-ui'
 
 const appStore = useAppStore()
 
@@ -46,6 +46,8 @@ onMounted(() => {
   <NConfigProvider
     :theme="appStore.isDark ? darkTheme : null"
     :theme-overrides="themeOverrides"
+    :locale="zhCN"
+    :date-locale="dateZhCN"
   >
     <NMessageProvider>
       <NDialogProvider>

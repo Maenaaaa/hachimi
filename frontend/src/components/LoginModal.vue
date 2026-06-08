@@ -30,6 +30,7 @@ const errorMsg = ref('')
 
 const loginForm = ref({ username: '', password: '' })
 const loginFormRef = ref<FormInst | null>(null)
+const passwordInputRef = ref<InstanceType<typeof import('naive-ui')['NInput']> | null>(null)
 const loginRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
@@ -37,6 +38,9 @@ const loginRules = {
 
 const registerForm = ref({ username: '', password: '', confirmPassword: '', nickname: '' })
 const registerFormRef = ref<FormInst | null>(null)
+const registerNicknameRef = ref<InstanceType<typeof import('naive-ui')['NInput']> | null>(null)
+const registerPasswordRef = ref<InstanceType<typeof import('naive-ui')['NInput']> | null>(null)
+const registerConfirmRef = ref<InstanceType<typeof import('naive-ui')['NInput']> | null>(null)
 const registerRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -127,12 +131,14 @@ function switchTab(tab: 'login' | 'register') {
 
           <NForm ref="loginFormRef" :model="loginForm" :rules="loginRules" size="large">
             <NFormItem path="username">
-              <NInput v-model:value="loginForm.username" placeholder="用户名" clearable>
+              <NInput v-model:value="loginForm.username" placeholder="用户名" clearable
+                @keyup.enter="() => { passwordInputRef?.focus() }">
                 <template #prefix><NIcon><Person24Filled /></NIcon></template>
               </NInput>
             </NFormItem>
             <NFormItem path="password">
-              <NInput v-model:value="loginForm.password" type="password" placeholder="密码" show-password-on="click">
+              <NInput ref="passwordInputRef" v-model:value="loginForm.password" type="password" placeholder="密码" show-password-on="click"
+                @keyup.enter="handleLogin">
                 <template #prefix><NIcon><LockClosed24Filled /></NIcon></template>
               </NInput>
             </NFormItem>
@@ -151,16 +157,20 @@ function switchTab(tab: 'login' | 'register') {
 
           <NForm ref="registerFormRef" :model="registerForm" :rules="registerRules" size="large">
             <NFormItem path="username">
-              <NInput v-model:value="registerForm.username" placeholder="用户名" clearable />
+              <NInput v-model:value="registerForm.username" placeholder="用户名" clearable
+                @keyup.enter="() => { registerNicknameRef?.focus() }" />
             </NFormItem>
             <NFormItem path="nickname">
-              <NInput v-model:value="registerForm.nickname" placeholder="昵称" clearable />
+              <NInput ref="registerNicknameRef" v-model:value="registerForm.nickname" placeholder="昵称" clearable
+                @keyup.enter="() => { registerPasswordRef?.focus() }" />
             </NFormItem>
             <NFormItem path="password">
-              <NInput v-model:value="registerForm.password" type="password" placeholder="密码（至少6位）" show-password-on="click" />
+              <NInput ref="registerPasswordRef" v-model:value="registerForm.password" type="password" placeholder="密码（至少6位）" show-password-on="click"
+                @keyup.enter="() => { registerConfirmRef?.focus() }" />
             </NFormItem>
             <NFormItem path="confirmPassword">
-              <NInput v-model:value="registerForm.confirmPassword" type="password" placeholder="确认密码" show-password-on="click" />
+              <NInput ref="registerConfirmRef" v-model:value="registerForm.confirmPassword" type="password" placeholder="确认密码" show-password-on="click"
+                @keyup.enter="handleRegister" />
             </NFormItem>
             <NButton type="primary" block :loading="loading" @click="handleRegister">注册</NButton>
           </NForm>
