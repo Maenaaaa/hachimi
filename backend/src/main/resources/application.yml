@@ -54,3 +54,11 @@ minio:
   bucket-avatar: avatars
   bucket-verification: verification
   bucket-chat: chat-images
+
+avatar:
+  thumbnail-sizes:
+    - 64
+    - 128
+    - 256
+  quality: 0.8
+  max-file-size: 5MB

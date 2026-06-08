@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, h } from 'vue'
+import { ref, watch, onMounted, h, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
@@ -7,6 +7,7 @@ import { getUnreadCount } from '@/api/notification'
 import { getUnreadCount as getChatUnreadCount } from '@/api/chat'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { getToken } from '@/utils/request'
+import { getAvatarUrl } from '@/utils'
 import LoginModal from '@/components/LoginModal.vue'
 import {
   NLayout,
@@ -40,6 +41,10 @@ const route = useRoute()
 const userStore = useUserStore()
 const appStore = useAppStore()
 const { subscribe, connect } = useWebSocket()
+
+const userAvatarUrl = computed(() => {
+  return getAvatarUrl(userStore.user?.avatar, 'original')
+})
 
 const keyword = ref('')
 const unreadCount = ref(0)
@@ -228,17 +233,10 @@ watch(
             </NBadge>
 
             <NDropdown trigger="click" :options="userMenuOptions" @select="handleUserMenuSelect">
-              <NAvatar
-                :key="userStore.user?.avatar"
-                :src="userStore.user?.avatar || undefined"
-                :fallback-src="undefined"
-                size="small"
-                round
-                class="cursor-pointer"
-                style="background-color: #3B82F6"
-              >
-                {{ userStore.user?.nickname?.charAt(0) || 'U' }}
-              </NAvatar>
+              <img 
+                :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
+                class="w-8 h-8 rounded-full object-cover cursor-pointer"
+              />
             </NDropdown>
           </template>
 

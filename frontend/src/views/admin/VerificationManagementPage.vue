@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
 import { getAdminVerifications, approveVerification, rejectVerification } from '@/api/admin'
-import { getImageUrl, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatDate } from '@/utils'
 import type { User } from '@/types/entity'
 import {
   NCard,
@@ -106,14 +106,7 @@ const columns: DataTableColumn<User>[] = [
     width: 180,
     render(row) {
       return h('div', { class: 'flex items-center gap-3' }, [
-        h(NAvatar, {
-          src: getImageUrl(row.avatar),
-          size: 36,
-          round: true,
-          style: { backgroundColor: '#3B82F6' },
-        }, {
-          default: () => row.nickname?.charAt(0) || 'U',
-        }),
+        h('img', { src: getAvatarUrl(row.avatar, 'thumb_64'), class: 'w-9 h-9 rounded-full object-cover' }),
         h('div', null, [
           h('div', { class: 'font-semibold text-sm' }, row.nickname),
           h('div', { class: 'text-xs text-gray-400' }, '@' + row.username),

@@ -1,33 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { upload } from '@/utils/request'
-import { getImageUrl } from '@/utils'
+import { getAvatarUrl } from '@/utils'
 import {
   NCard,
   NInput,
   NButton,
   NForm,
   NFormItem,
-  NAvatar,
-  NIcon,
-  NAlert,
-  NSpace,
-  NDivider,
-  NUpload,
   NModal,
   NTag,
   useMessage,
   type FormInst,
-  type UploadFileInfo,
 } from 'naive-ui'
-import { Camera24Filled } from '@vicons/fluent'
+import AvatarUpload from '@/components/AvatarUpload.vue'
 import type { ProfileForm, PasswordForm } from '@/types/entity'
 
 const router = useRouter()
 const userStore = useUserStore()
 const message = useMessage()
+
+const avatarUrl = computed(() => {
+  return getAvatarUrl(userStore.user?.avatar, 'original')
+})
 
 const profileFormRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
@@ -79,19 +75,8 @@ onMounted(() => {
   }
 })
 
-async function handleAvatarUpload({ file, onFinish, onError }: { file: UploadFileInfo; onFinish: () => void; onError: () => void }) {
-  if (!file.file) return
-  const fd = new FormData()
-  fd.append('file', file.file)
-
-  try {
-    await userStore.uploadAvatar(fd)
-    message.success('头像更新成功')
-    onFinish()
-  } catch {
-    message.error('头像上传失败')
-    onError()
-  }
+function handleAvatarUploaded() {
+  userStore.fetchProfile()
 }
 
 async function saveProfile() {
@@ -161,22 +146,11 @@ async function handleVerify() {
     <!-- Avatar Section -->
     <NCard :bordered="true" style="border-radius: 12px">
       <div class="flex items-center gap-6">
-        <div class="relative group">
-          <NAvatar
-            :key="userStore.user?.avatar"
-            :src="getImageUrl(userStore.user?.avatar)"
-            :size="72"
-            round
-            style="background-color: #3B82F6; font-size: 28px"
-          >
-            {{ userStore.user?.nickname?.charAt(0) || 'U' }}
-          </NAvatar>
-          <NUpload :custom-request="handleAvatarUpload" accept="image/*" :show-file-list="false">
-            <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-              <NIcon color="white" size="20"><Camera24Filled /></NIcon>
-            </div>
-          </NUpload>
-        </div>
+        <AvatarUpload
+          :current-avatar="avatarUrl"
+          :size="72"
+          @uploaded="handleAvatarUploaded"
+        />
         <div>
           <div class="font-bold text-gray-800">{{ userStore.user?.nickname }}</div>
           <div class="text-sm text-gray-400">@{{ userStore.user?.username }}</div>

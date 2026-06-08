@@ -7,7 +7,7 @@ import { getMyGoods, getUserGoods } from '@/api/goods'
 import { getMyFavorites } from '@/api/favorite'
 import { getFollowers, getFollowing, addFollow, removeFollow } from '@/api/follow'
 import { getUserReviews } from '@/api/review'
-import { formatPrice, formatDate, getImageUrl } from '@/utils'
+import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import {
   NAvatar, NButton, NCard, NTag, NTab, NTabPane, NTabs, NEmpty, NSpin, NModal, NIcon, useMessage,
@@ -39,6 +39,10 @@ const isOwnProfile = computed(() => {
 })
 
 const displayUser = computed(() => profileUser.value || userStore.user)
+
+const userAvatarUrl = computed(() => {
+  return getAvatarUrl(displayUser.value?.avatar, 'original')
+})
 
 async function loadProfile() {
   loading.value = true
@@ -147,12 +151,11 @@ watch(() => route.query.userId, () => {
     <NSpin :show="loading">
       <NCard :bordered="true" style="border-radius: 12px" class="mb-6">
         <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
-          <NAvatar
-            :key="displayUser?.avatar"
-            :src="getImageUrl(displayUser?.avatar || undefined)"
-            :size="80" round
-            style="background-color: #3B82F6; font-size: 32px"
-          >{{ displayUser?.nickname?.charAt(0) || 'U' }}</NAvatar>
+          <img
+            :src="getAvatarUrl(displayUser?.avatar, 'original')"
+            class="w-20 h-20 rounded-full object-cover"
+            style="background-color: #3B82F6"
+          />
           <div class="flex-1 text-center sm:text-left">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
               <h2 class="text-xl font-bold dark:text-gray-100 text-gray-800">{{ displayUser?.nickname || '用户' }}</h2>
@@ -213,9 +216,7 @@ watch(() => route.query.userId, () => {
             <div v-if="following.length > 0" class="space-y-2 mt-4">
               <div v-for="f in following" :key="f.id" class="flex items-center gap-3 p-2 cursor-pointer dark:hover:bg-gray-700 hover:bg-gray-50 rounded-lg"
                 @click="router.push('/profile?userId=' + f.id)">
-                <NAvatar :src="f.avatar || undefined" :size="36" round style="background-color: #3B82F6">
-                  {{ f.nickname?.charAt(0) || 'U' }}
-                </NAvatar>
+                <img :src="getAvatarUrl(f.avatar, 'thumb_64')" class="w-9 h-9 rounded-full object-cover" />
                 <div>
                   <div class="font-semibold text-sm">{{ f.nickname }}</div>
                   <div class="text-xs text-gray-400">{{ f.school || '' }}</div>
@@ -229,9 +230,7 @@ watch(() => route.query.userId, () => {
             <div v-if="reviews.length > 0" class="space-y-3 mt-4">
               <div v-for="review in reviews" :key="review.id" class="pb-3 dark:border-gray-700 border-b border-gray-100 last:border-0">
                 <div class="flex items-center gap-2">
-                  <NAvatar :src="review.reviewerAvatar || undefined" :size="24" round style="background-color: #3B82F6">
-                    {{ review.reviewerNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img :src="getAvatarUrl(review.reviewerAvatar, 'thumb_64')" class="w-6 h-6 rounded-full object-cover" />
                   <span class="text-sm font-semibold">{{ review.reviewerNickname }}</span>
                   <span class="text-yellow-400 text-sm">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
                   <span class="text-xs text-gray-400">{{ formatDate(review.createTime) }}</span>
@@ -253,9 +252,7 @@ watch(() => route.query.userId, () => {
           <div v-for="u in followModalList" :key="u.id"
             class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50"
             @click="showFollowModal = false; router.push('/profile?userId=' + u.id)">
-            <NAvatar :src="u.avatar || undefined" :size="36" round style="background-color: #3B82F6">
-              {{ u.nickname?.charAt(0) || 'U' }}
-            </NAvatar>
+            <img :src="getAvatarUrl(u.avatar, 'thumb_64')" class="w-9 h-9 rounded-full object-cover" />
             <div class="flex-1 min-w-0">
               <div class="text-sm font-semibold truncate">{{ u.nickname }}</div>
               <div class="text-xs text-gray-400">{{ u.school || '' }}</div>

@@ -10,13 +10,17 @@ import {
   NButton, NInput, NAvatar, NBadge, NSpin, NEmpty, NIcon, NImage, NCard, useMessage,
 } from 'naive-ui'
 import { Send24Filled, Chat24Filled, Gift24Filled, Image24Filled } from '@vicons/fluent'
-import { getImageUrl, formatPrice } from '@/utils'
+import { getImageUrl, formatPrice, getAvatarUrl } from '@/utils'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const message = useMessage()
 const { subscribe, send, connect, connected } = useWebSocket()
+
+const userAvatarUrl = computed(() => {
+  return getAvatarUrl(userStore.user?.avatar, 'original')
+})
 
 const conversations = ref<any[]>([])
 let currentSub: { unsubscribe: () => void } | null = null
@@ -191,9 +195,7 @@ watch(connected, (val) => { if (val) loadConversations() })
                 :class="{ 'dark:bg-blue-900/30 bg-blue-50': conv.id === activeConvId }"
                 @click="selectConv(conv.id)">
                 <NBadge :value="conv.unreadCount" :max="99" :show="conv.unreadCount > 0">
-                  <NAvatar :src="conv.otherUserAvatar || undefined" :size="44" round style="background-color: #3B82F6">
-                    {{ conv.otherUserNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img :src="getAvatarUrl(conv.otherUserAvatar, 'thumb_64')" class="w-11 h-11 rounded-full object-cover" />
                 </NBadge>
                 <div class="flex-1 min-w-0">
                   <div class="flex justify-between items-center">
@@ -213,9 +215,7 @@ watch(connected, (val) => { if (val) loadConversations() })
       <div class="flex-1 flex flex-col">
         <template v-if="activeConv">
           <div class="p-4 dark:border-gray-700 border-b border-gray-100 flex items-center gap-3">
-            <NAvatar :src="activeConv.otherUserAvatar || undefined" :size="36" round style="background-color: #3B82F6">
-              {{ activeConv.otherUserNickname?.charAt(0) || 'U' }}
-            </NAvatar>
+            <img :src="getAvatarUrl(activeConv.otherUserAvatar, 'thumb_64')" class="w-9 h-9 rounded-full object-cover" />
             <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm">{{ activeConv.otherUserNickname }}</div>
               <div class="text-xs text-gray-400">{{ activeConv.goodsTitle }}</div>
@@ -247,11 +247,8 @@ watch(connected, (val) => { if (val) loadConversations() })
               <div v-if="messages.length > 0" class="space-y-3">
                 <div v-for="msg in messages" :key="msg.id"
                   class="flex gap-2" :class="msg.senderId === userStore.user?.id ? 'justify-end' : 'justify-start'">
-                  <NAvatar v-if="msg.senderId !== userStore.user?.id"
-                    :src="msg.senderAvatar || undefined" :size="28" round class="shrink-0"
-                    style="background-color: #3B82F6">
-                    {{ msg.senderNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img v-if="msg.senderId !== userStore.user?.id"
+                    :src="getAvatarUrl(msg.senderAvatar, 'thumb_64')" class="w-7 h-7 rounded-full object-cover shrink-0" />
                   <div style="max-width: 70%">
                     <!-- Card message -->
                     <div v-if="isCard(msg) && parseCard(msg)" class="rounded-2xl overflow-hidden shadow-sm"
@@ -282,11 +279,10 @@ watch(connected, (val) => { if (val) loadConversations() })
                       <span v-if="msg.senderId === userStore.user?.id && msg.isRead" class="ml-1">已读</span>
                     </div>
                   </div>
-                  <NAvatar v-if="msg.senderId === userStore.user?.id"
-                    :src="msg.senderAvatar || userStore.user?.avatar || undefined" :size="28" round class="shrink-0"
-                    style="background-color: #3B82F6">
-                    {{ msg.senderNickname?.charAt(0) || userStore.user?.nickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img v-if="msg.senderId === userStore.user?.id"
+                    :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
+                    class="w-7 h-7 rounded-full object-cover shrink-0"
+                  />
                 </div>
               </div>
               <NEmpty v-else-if="!loadingMsgs" description="暂无消息，打个招呼吧" class="mt-20" />

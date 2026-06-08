@@ -7,7 +7,7 @@ import { addFollow, removeFollow } from '@/api/follow'
 import { createOrder } from '@/api/order'
 import { getComments, createComment } from '@/api/comment'
 import { createReport } from '@/api/report'
-import { getImageUrl, formatPrice, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatPrice, formatDate } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import { GOODS_CONDITIONS, GOODS_STATUS } from '@/constants'
 import type { Goods, Review } from '@/types/entity'
@@ -384,14 +384,10 @@ onMounted(fetchData)
             <NCard :bordered="true" style="border-radius: 12px">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3 cursor-pointer" @click="router.push(`/profile?userId=${goods.userId}`)">
-                  <NAvatar
-                    :src="goods.userAvatar || undefined"
-                    :size="48"
-                    round
-                    style="background-color: #3B82F6"
-                  >
-                    {{ goods.userNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img 
+                    :src="getAvatarUrl(goods.userAvatar, 'thumb_128')" 
+                    class="w-12 h-12 rounded-full object-cover"
+                  />
                   <div>
                     <div class="font-semibold text-gray-800">{{ goods.userNickname }}</div>
                     <div class="text-xs text-gray-400">信用分 {{ goods.userCreditScore || 0 }}</div>
@@ -502,9 +498,7 @@ onMounted(fetchData)
             <template v-for="c in comments" :key="c.id">
               <div class="pb-3 border-b border-gray-100 last:border-0">
                 <div class="flex gap-2">
-                  <NAvatar :src="c.userAvatar || undefined" :size="32" round style="background-color: #3B82F6">
-                    {{ c.userNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img :src="getAvatarUrl(c.userAvatar, 'thumb_64')" class="w-8 h-8 rounded-full object-cover" />
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <span class="font-semibold text-sm">{{ c.userNickname }}</span>
@@ -516,9 +510,7 @@ onMounted(fetchData)
                     <!-- Replies -->
                     <div v-if="c.replies && c.replies.length > 0" class="mt-2 ml-4 pl-3 border-l-2 border-gray-100 space-y-2">
                       <div v-for="r in c.replies" :key="r.id" class="flex gap-2">
-                        <NAvatar :src="r.userAvatar || undefined" :size="24" round style="background-color: #3B82F6; font-size: 12px">
-                          {{ r.userNickname?.charAt(0) || 'U' }}
-                        </NAvatar>
+                        <img :src="getAvatarUrl(r.userAvatar, 'thumb_64')" class="w-6 h-6 rounded-full object-cover" />
                         <div class="flex-1">
                           <div class="flex items-center gap-2">
                             <span class="font-semibold text-xs">{{ r.userNickname }}</span>

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { getBuyerOrders, getSellerOrders, confirmOrder, cancelOrder, completeOrder } from '@/api/order'
 import { createReview } from '@/api/review'
 import { useUserStore } from '@/stores/user'
-import { formatPrice, formatDate, getImageUrl } from '@/utils'
+import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import {
   NCard, NButton, NTag, NEmpty, NSpin, NTabPane, NTabs, NSpace,
   NModal, NInput, NRate, NAvatar, useMessage, useDialog,
@@ -137,16 +137,13 @@ onMounted(loadOrders)
                         <span v-if="order.meetTime">🕐 {{ order.meetTime }}</span>
                         <span v-if="order.meetPlace" class="ml-3">📍 {{ order.meetPlace }}</span>
                       </div>
-                      <div class="flex items-center justify-between mt-2">
-                        <div class="flex items-center gap-2 text-xs text-gray-400">
-                          <span class="text-gray-400">{{ tabInfo.counterLabel(order) }}:</span>
-                          <NAvatar :src="tabInfo.counterAvatar(order) || undefined" :size="20" round class="cursor-pointer shrink-0"
-                            style="background-color: #3B82F6; font-size: 10px"
-                            @click.stop="router.push('/profile?userId=' + tabInfo.counterId(order))">
-                            {{ tabInfo.counterName(order)?.charAt(0) || 'U' }}
-                          </NAvatar>
-                          <span class="text-gray-600 cursor-pointer hover:text-[#3B82F6]"
-                            @click.stop="router.push('/profile?userId=' + tabInfo.counterId(order))">{{ tabInfo.counterName(order) }}</span>
+                        <div class="flex items-center justify-between mt-2">
+                          <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span class="text-gray-400">{{ tabInfo.counterLabel(order) }}:</span>
+                            <img :src="getAvatarUrl(tabInfo.counterAvatar(order), 'thumb_64')" class="w-5 h-5 rounded-full object-cover cursor-pointer shrink-0"
+                              @click.stop="router.push('/profile?userId=' + tabInfo.counterId(order))" />
+                            <span class="text-gray-600 cursor-pointer hover:text-[#3B82F6]"
+                              @click.stop="router.push('/profile?userId=' + tabInfo.counterId(order))">{{ tabInfo.counterName(order) }}</span>
                           <span class="ml-2">{{ formatDate(order.createTime) }}</span>
                         </div>
                         <NSpace @click.stop>

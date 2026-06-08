@@ -3,7 +3,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchGoods } from '@/api/goods'
 import { getCategories } from '@/api/category'
-import { formatPrice, formatDate } from '@/utils'
+import { formatPrice, formatDate, getAvatarUrl } from '@/utils'
 import type { Category } from '@/types/entity'
 import { GOODS_CONDITIONS } from '@/constants'
 import {
@@ -194,9 +194,7 @@ onMounted(() => {
               <p v-else class="text-[#10B981] font-bold text-base mt-1">仅置换</p>
               <div class="flex items-center justify-between mt-1">
                 <div class="flex items-center gap-1">
-                  <NAvatar :src="goods.sellerAvatar || undefined" :size="20" round style="background-color: #3B82F6">
-                    {{ goods.sellerNickname?.charAt(0) || 'U' }}
-                  </NAvatar>
+                  <img :src="getAvatarUrl(goods.sellerAvatar, 'thumb_64')" class="w-5 h-5 rounded-full object-cover" />
                   <span class="text-xs text-gray-400">{{ goods.sellerNickname || '匿名' }}</span>
                 </div>
                 <span class="text-xs text-gray-400">{{ formatDate(goods.createTime) }}</span>

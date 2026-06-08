@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getOrderDetail, confirmOrder, cancelOrder, completeOrder, requestCancelOrder, approveCancelOrder, rejectCancelOrder, createDispute } from '@/api/order'
 import { getReviewByOrderId, createReview } from '@/api/review'
-import { getImageUrl, formatPrice, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatPrice, formatDate } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import { ORDER_STATUS } from '@/constants'
 import {
@@ -298,9 +298,7 @@ onMounted(loadOrder)
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <NAvatar :src="getImageUrl(order.buyerAvatar)" :size="32" round style="background-color: #3B82F6">
-                  {{ order.buyerNickname?.charAt(0) || 'B' }}
-                </NAvatar>
+                <img :src="getAvatarUrl(order.buyerAvatar, 'thumb_64')" class="w-8 h-8 rounded-full object-cover" />
                 <div>
                   <span class="text-sm font-semibold">{{ order.buyerNickname }}</span>
                   <span class="text-xs text-gray-400 ml-1" v-if="isBuyer">(我)</span>
@@ -310,9 +308,7 @@ onMounted(loadOrder)
             </div>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <NAvatar :src="getImageUrl(order.sellerAvatar)" :size="32" round style="background-color: #10B981">
-                  {{ order.sellerNickname?.charAt(0) || 'S' }}
-                </NAvatar>
+                <img :src="getAvatarUrl(order.sellerAvatar, 'thumb_64')" class="w-8 h-8 rounded-full object-cover" />
                 <div>
                   <span class="text-sm font-semibold">{{ order.sellerNickname }}</span>
                   <span class="text-xs text-gray-400 ml-1" v-if="isSeller">(我)</span>
@@ -416,9 +412,7 @@ onMounted(loadOrder)
           <NCard v-if="otherReview && myReview" :bordered="true" style="border-radius: 12px" class="mb-4">
             <template #header><span class="text-sm font-bold">对方的评价</span></template>
             <div class="flex items-center gap-2 mb-2">
-              <NAvatar :src="getImageUrl(otherReview.reviewerAvatar)" :size="28" round style="background-color: #3B82F6">
-                {{ otherReview.reviewerNickname?.charAt(0) || 'U' }}
-              </NAvatar>
+              <img :src="getAvatarUrl(otherReview.reviewerAvatar, 'thumb_64')" class="w-7 h-7 rounded-full object-cover" />
               <span class="text-sm font-semibold">{{ otherReview.reviewerNickname }}</span>
             </div>
             <div class="text-yellow-400 text-lg mb-1">

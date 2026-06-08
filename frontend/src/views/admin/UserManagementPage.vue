@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
 import { getAdminUsers, disableUser, enableUser } from '@/api/admin'
-import { getImageUrl, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatDate } from '@/utils'
 import type { User } from '@/types/entity'
 import {
   NCard,
@@ -90,9 +90,7 @@ const columns: DataTableColumn<User>[] = [
     width: 200,
     render(row) {
       return h('div', { class: 'flex items-center gap-3 cursor-pointer', onClick: () => showUserDetail(row) }, [
-        h(NAvatar, { src: getImageUrl(row.avatar), size: 36, round: true, style: { backgroundColor: '#3B82F6' } }, {
-          default: () => row.nickname?.charAt(0) || 'U',
-        }),
+        h('img', { src: getAvatarUrl(row.avatar, 'thumb_64'), class: 'w-9 h-9 rounded-full object-cover' }),
         h('div', null, [
           h('div', { class: 'font-semibold text-sm' }, row.nickname),
           h('div', { class: 'text-xs text-gray-400' }, '@' + row.username),
@@ -204,14 +202,10 @@ onMounted(loadUsers)
       <NDrawerContent title="用户详情" closable>
         <template v-if="selectedUser">
           <div class="text-center mb-6">
-            <NAvatar
-              :src="getImageUrl(selectedUser.avatar)"
-              :size="80"
-              round
-              style="background-color: #3B82F6"
-            >
-              {{ selectedUser.nickname?.charAt(0) || 'U' }}
-            </NAvatar>
+            <img
+              :src="getAvatarUrl(selectedUser.avatar, 'thumb_256')"
+              class="w-20 h-20 rounded-full object-cover mx-auto"
+            />
             <h3 class="text-lg font-bold mt-2">{{ selectedUser.nickname }}</h3>
             <p class="text-sm text-gray-400">@{{ selectedUser.username }}</p>
           </div>

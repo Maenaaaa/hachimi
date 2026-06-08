@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getReviewById, getReviewByOrderId } from '@/api/review'
-import { getImageUrl, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatDate } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import type { Review } from '@/types/entity'
 import { NCard, NSpin, NEmpty, NAvatar, NButton, NIcon, NDivider } from 'naive-ui'
@@ -57,13 +57,10 @@ onMounted(load)
           </template>
           <div class="space-y-3">
             <div class="flex items-center gap-3">
-              <NAvatar
-                :src="getImageUrl(otherReview.reviewerAvatar)"
-                :size="36" round
-                style="background-color: #3B82F6"
-              >
-                {{ otherReview.reviewerNickname?.charAt(0) || 'U' }}
-              </NAvatar>
+              <img
+                :src="getAvatarUrl(otherReview.reviewerAvatar, 'thumb_64')"
+                class="w-9 h-9 rounded-full object-cover"
+              />
               <div>
                 <div class="font-semibold text-sm">{{ otherReview.reviewerNickname }}</div>
                 <div class="text-xs text-gray-400">{{ formatDate(otherReview.createTime) }}</div>

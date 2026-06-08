@@ -40,5 +40,39 @@ export function getImageUrl(path: string | undefined | null): string {
     return `/api/file/${minioMatch[1]}/${minioMatch[2]}`
   }
   if (path.startsWith('http')) return path
-  return '/api' + path
+  return '/api/file/' + path
+}
+
+export type AvatarSize = 'original' | 'thumb_256' | 'thumb_128' | 'thumb_64'
+
+export function getAvatarUrl(path: string | undefined | null, size: AvatarSize = 'original'): string {
+  if (!path) return '/default-avatar.svg'
+  
+  // 处理完整URL（旧数据兼容）
+  if (path.startsWith('http')) {
+    const match = path.match(/\/avatars\/(.+)$/)
+    if (match) {
+      path = 'avatars/' + match[1]
+    } else {
+      return path
+    }
+  }
+  
+  // 处理相对路径 avatars/xxx/original.png
+  if (path.includes('avatars/')) {
+    // 提取 userId
+    const userMatch = path.match(/avatars\/(\d+)\//)
+    if (userMatch) {
+      const userId = userMatch[1]
+      if (size === 'original') {
+        return `/api/file/avatars/${userId}/original.png`
+      }
+      return `/api/file/avatars/${userId}/${size}.png`
+    }
+  }
+  
+  // 如果路径不包含 avatars/，可能是旧格式，直接返回
+  if (path.startsWith('/')) return path
+  
+  return '/default-avatar.svg'
 }

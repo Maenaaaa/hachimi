@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { getToken } from '@/utils/request'
+import { getAvatarUrl } from '@/utils'
 import {
   NLayout,
   NLayoutHeader,
@@ -33,6 +34,10 @@ const route = useRoute()
 const userStore = useUserStore()
 const appStore = useAppStore()
 const collapsed = ref(false)
+
+const userAvatarUrl = computed(() => {
+  return getAvatarUrl(userStore.user?.avatar, 'original')
+})
 
 function handleLogout() {
   userStore.logout()
@@ -111,14 +116,10 @@ onMounted(async () => {
           </NButton>
           <NDropdown trigger="click" :options="userMenuOptions" @select="(key: string) => { if (key === 'logout') handleLogout() }">
             <NSpace align="center" class="cursor-pointer">
-              <NAvatar
-                :src="userStore.user?.avatar || undefined"
-                size="small"
-                round
-                style="background-color: #3B82F6"
-              >
-                {{ userStore.user?.nickname?.charAt(0) || 'A' }}
-              </NAvatar>
+              <img
+                :src="getAvatarUrl(userStore.user?.avatar, 'original')"
+                class="w-8 h-8 rounded-full object-cover"
+              />
               <span class="text-sm text-gray-600 dark:text-gray-300">{{ userStore.user?.nickname || '管理员' }}</span>
             </NSpace>
           </NDropdown>

@@ -110,18 +110,23 @@ public class UserServiceImpl implements UserService {
         if (contentType == null || (!contentType.contains("jpeg") && !contentType.contains("png") && !contentType.contains("webp"))) {
             throw new BusinessException("仅支持 JPG/PNG/WebP 格式的图片");
         }
-        if (file.getSize() > 2 * 1024 * 1024) {
-            throw new BusinessException("图片大小不能超过 2MB");
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new BusinessException("图片大小不能超过 5MB");
         }
-        String url = fileService.upload(file, "avatars");
+        
+        // 删除旧头像
         User user = userMapper.selectById(userId);
         if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-            String oldKey = user.getAvatar().substring(user.getAvatar().lastIndexOf("/") + 1);
-            fileService.delete(oldKey, "avatars");
+            fileService.deleteAvatar(userId);
         }
-        user.setAvatar(url);
+        
+        // 上传新头像（返回相对路径）
+        String avatarPath = fileService.uploadAvatar(file, userId);
+        
+        // 更新数据库
+        user.setAvatar(avatarPath);
         userMapper.updateById(user);
-        return url;
+        return avatarPath;
     }
 
     @Override

@@ -45,6 +45,8 @@ export const useUserStore = defineStore('user', () => {
 
   async function fetchProfile() {
     const res = await userApi.getUserProfile()
+    console.log('fetchProfile response:', res.data)
+    console.log('avatar value:', res.data.avatar)
     user.value = res.data
     localStorage.setItem(USER_KEY, JSON.stringify(res.data))
     updateAuthState()

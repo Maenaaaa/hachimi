@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { getGoodsRecommend, getGoodsLatest } from '@/api/goods'
 import { getCategories } from '@/api/category'
 import { getAnnouncements } from '@/api/announcement'
-import { formatPrice, formatDate, getImageUrl } from '@/utils'
+import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import type { Goods, Category, Announcement } from '@/types/entity'
 import {
   NCarousel,
@@ -196,14 +196,10 @@ function goToGoods(id: number) {
                 <p v-else class="text-green-600 font-bold text-sm mt-1">🔄 仅置换</p>
                 <div class="flex items-center justify-between mt-1">
                   <div class="flex items-center gap-1">
-                    <NAvatar
-                      :src="getImageUrl(goods.sellerAvatar || goods.userAvatar)"
-                      :size="20"
-                      round
-                      style="background-color: #3B82F6"
-                    >
-                      {{ (goods.sellerNickname || goods.userNickname)?.charAt(0) || 'U' }}
-                    </NAvatar>
+                    <img
+                      :src="getAvatarUrl(goods.sellerAvatar || goods.userAvatar, 'thumb_64')"
+                      class="w-5 h-5 rounded-full object-cover"
+                    />
                     <span class="text-xs text-gray-400">{{ goods.sellerNickname || goods.userNickname || '匿名' }}</span>
                   </div>
                   <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>
@@ -255,14 +251,10 @@ function goToGoods(id: number) {
                 <p v-else class="text-green-600 font-bold text-sm mt-1">🔄 仅置换</p>
                 <div class="flex items-center justify-between mt-1">
                   <div class="flex items-center gap-1">
-                    <NAvatar
-                      :src="getImageUrl(goods.sellerAvatar || goods.userAvatar)"
-                      :size="20"
-                      round
-                      style="background-color: #3B82F6"
-                    >
-                      {{ (goods.sellerNickname || goods.userNickname)?.charAt(0) || 'U' }}
-                    </NAvatar>
+                    <img
+                      :src="getAvatarUrl(goods.sellerAvatar || goods.userAvatar, 'thumb_64')"
+                      class="w-5 h-5 rounded-full object-cover"
+                    />
                     <span class="text-xs text-gray-400">{{ goods.sellerNickname || goods.userNickname || '匿名' }}</span>
                   </div>
                   <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>

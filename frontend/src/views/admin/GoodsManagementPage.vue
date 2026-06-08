@@ -2,7 +2,7 @@
 import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAdminGoods, approveGoods, rejectGoods, takeDownGoods } from '@/api/admin'
-import { formatPrice, formatDate, getImageUrl } from '@/utils'
+import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import type { Goods } from '@/types/entity'
 import {
@@ -149,12 +149,7 @@ const columns: DataTableColumn<any>[] = [
     width: 120,
     render(row) {
       return h('div', { class: 'flex items-center gap-2' }, [
-        h(NAvatar, {
-          src: row.userAvatar || undefined,
-          size: 24,
-          round: true,
-          style: { backgroundColor: '#3B82F6', fontSize: '12px' },
-        }, { default: () => row.userNickname?.charAt(0) || 'U' }),
+        h('img', { src: getAvatarUrl(row.userAvatar, 'thumb_64'), class: 'w-6 h-6 rounded-full object-cover' }),
         h('span', { class: 'text-sm' }, row.userNickname),
       ])
     },
