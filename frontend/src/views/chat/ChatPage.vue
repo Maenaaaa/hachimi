@@ -50,7 +50,9 @@ async function loadMessages() {
     messages.value = res.data || []
     await nextTick()
     scrollToBottom()
+    // 自动标记已读并刷新会话列表
     markAsRead(activeConvId.value).catch(() => {})
+    loadConversations()
   } catch { /* ignore */ } finally { loadingMsgs.value = false }
 }
 
@@ -115,9 +117,36 @@ function _send(content: string, messageType: string) {
   inputText.value = ''
 }
 
-function isCard(msg: any): boolean { return msg.messageType === 'CARD' }
-function isImage(msg: any): boolean { return msg.messageType === 'IMAGE' }
+function isCard(msg: any): boolean { 
+  const type = msg.messageType || msg.type
+  return type === 'CARD' || type === 'card'
+}
+function isImage(msg: any): boolean { 
+  const type = msg.messageType || msg.type
+  return type === 'IMAGE' || type === 'image'
+}
 function parseCard(msg: any): any { try { return JSON.parse(msg.content) } catch { return null } }
+
+function formatLastMessage(message: any): string {
+  if (!message) return '暂无消息'
+  const content = typeof message === 'string' ? message : (message?.content || '')
+  if (!content) return '暂无消息'
+  // 直接用正则匹配
+  if (content.includes('"type":"card"') || content.includes('"type": "card"')) return '(商品卡片)'
+  if (content.includes('"type":"image"') || content.includes('"type": "image"')) return '(图片)'
+  // 如果是图片URL
+  if (/https?:\/\//.test(content) && /\.(jpg|jpeg|png|gif|webp)/i.test(content)) return '(图片)'
+  // 如果是图片URL（MinIO地址）
+  if (content.includes('http://192.') || content.includes('http://minio')) return '(图片)'
+  // 尝试解析 JSON 获取 title
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed.title) return parsed.title
+    if (parsed.content) return parsed.content
+  } catch {}
+  // 截取前20个字符显示
+  return content.length > 20 ? content.substring(0, 20) + '...' : content
+}
 
 function triggerImageUpload() { imgInput.value?.click() }
 
@@ -151,7 +180,6 @@ function onWsMessage(body: string) {
     if (msg.conversationId === activeConvId.value) {
       messages.value.push(msg)
       nextTick(() => scrollToBottom())
-      markAsRead(activeConvId.value!).catch(() => {})
     }
     loadConversations()
   } catch { /* ignore */ }
@@ -202,7 +230,7 @@ watch(connected, (val) => { if (val) loadConversations() })
                     <span class="font-semibold text-sm truncate">{{ conv.otherUserNickname }}</span>
                     <span class="text-xs text-gray-400 shrink-0">{{ formatDate(conv.lastMessageTime) }}</span>
                   </div>
-                  <p class="text-xs text-gray-400 truncate mt-1">{{ conv.lastMessage || '暂无消息' }}</p>
+                  <p class="text-xs text-gray-400 truncate mt-1">{{ formatLastMessage(conv.lastMessage) }}</p>
                 </div>
               </div>
             </div>

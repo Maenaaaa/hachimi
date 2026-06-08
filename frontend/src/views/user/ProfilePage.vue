@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { getUserProfile, getUserPublicProfile } from '@/api/user'
 import { getMyGoods, getUserGoods } from '@/api/goods'
 import { getMyFavorites } from '@/api/favorite'
-import { getFollowers, getFollowing, addFollow, removeFollow } from '@/api/follow'
+import { getFollowers, addFollow, removeFollow } from '@/api/follow'
 import { getUserReviews } from '@/api/review'
 import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
@@ -24,7 +24,6 @@ const tab = ref((route.query.tab as string) || 'goods')
 const myGoods = ref<any[]>([])
 const favorites = ref<any[]>([])
 const followers = ref<any[]>([])
-const following = ref<any[]>([])
 const reviews = ref<any[]>([])
 const loading = ref(true)
 const showFollowModal = ref(false)
@@ -210,20 +209,6 @@ watch(() => route.query.userId, () => {
               </div>
             </div>
             <NEmpty v-else description="暂无收藏" class="mt-4" />
-          </NTabPane>
-
-          <NTabPane v-if="isOwnProfile" name="following" tab="我的关注">
-            <div v-if="following.length > 0" class="space-y-2 mt-4">
-              <div v-for="f in following" :key="f.id" class="flex items-center gap-3 p-2 cursor-pointer dark:hover:bg-gray-700 hover:bg-gray-50 rounded-lg"
-                @click="router.push('/profile?userId=' + f.id)">
-                <img :src="getAvatarUrl(f.avatar, 'thumb_64')" class="w-9 h-9 rounded-full object-cover" />
-                <div>
-                  <div class="font-semibold text-sm">{{ f.nickname }}</div>
-                  <div class="text-xs text-gray-400">{{ f.school || '' }}</div>
-                </div>
-              </div>
-            </div>
-            <NEmpty v-else description="暂无关注" class="mt-4" />
           </NTabPane>
 
           <NTabPane name="reviews" tab="评价">

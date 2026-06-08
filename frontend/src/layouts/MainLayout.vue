@@ -134,12 +134,24 @@ onMounted(async () => {
     fetchUnreadCount()
     fetchChatUnreadCount()
     connect()
-    subscribe('/user/queue/notifications', () => {
-      fetchUnreadCount()
-    })
-    subscribe('/user/queue/messages', () => {
-      fetchChatUnreadCount()
-    })
+    // 定时刷新未读数
+    setInterval(() => {
+      if (userStore.isLoggedIn) {
+        fetchChatUnreadCount()
+        fetchUnreadCount()
+      }
+    }, 5000)
+    // WebSocket 订阅
+    const trySubscribe = (attempts: number) => {
+      if (attempts <= 0) return
+      if (connected.value) {
+        subscribe('/user/queue/notifications', () => { fetchUnreadCount() })
+        subscribe('/user/queue/messages', () => { fetchChatUnreadCount() })
+      } else {
+        setTimeout(() => trySubscribe(attempts - 1), 1000)
+      }
+    }
+    trySubscribe(10)
   }
 })
 

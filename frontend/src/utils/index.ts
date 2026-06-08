@@ -45,6 +45,13 @@ export function getImageUrl(path: string | undefined | null): string {
 
 export type AvatarSize = 'original' | 'thumb_256' | 'thumb_128' | 'thumb_64'
 
+// 用于清除缓存的时间戳
+let avatarCacheBuster = Date.now()
+
+export function updateAvatarCache() {
+  avatarCacheBuster = Date.now()
+}
+
 export function getAvatarUrl(path: string | undefined | null, size: AvatarSize = 'original'): string {
   if (!path) return '/default-avatar.svg'
   
@@ -65,9 +72,9 @@ export function getAvatarUrl(path: string | undefined | null, size: AvatarSize =
     if (userMatch) {
       const userId = userMatch[1]
       if (size === 'original') {
-        return `/api/file/avatars/${userId}/original.png`
+        return `/api/file/avatars/${userId}/original.png?t=${avatarCacheBuster}`
       }
-      return `/api/file/avatars/${userId}/${size}.png`
+      return `/api/file/avatars/${userId}/${size}.png?t=${avatarCacheBuster}`
     }
   }
   

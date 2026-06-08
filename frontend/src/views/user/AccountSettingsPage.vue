@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { getAvatarUrl } from '@/utils'
+import { getAvatarUrl, updateAvatarCache } from '@/utils'
 import {
   NCard,
   NInput,
@@ -76,6 +76,7 @@ onMounted(() => {
 })
 
 function handleAvatarUploaded() {
+  updateAvatarCache()
   userStore.fetchProfile()
 }
 
