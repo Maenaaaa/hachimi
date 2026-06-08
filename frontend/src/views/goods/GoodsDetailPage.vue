@@ -14,7 +14,6 @@ import type { Goods, Review } from '@/types/entity'
 import {
   NButton,
   NCard,
-  NImage,
   NTag,
   NIcon,
   NSpace,
@@ -319,13 +318,13 @@ onMounted(fetchData)
           <div class="md:col-span-3">
             <NCard :bordered="true" style="border-radius: 12px; overflow: hidden">
               <div v-if="goods.images && goods.images.length > 0">
-                <NImage
-                  :src="getImageUrl(goods.images[currentImageIndex])"
-                  :alt="goods.title"
-                  class="w-full"
-                  :img-props="{ style: 'width: 100%; height: 400px; object-fit: cover; border-radius: 8px;' }"
-                  preview-disabled
-                />
+                <div class="image-container">
+                  <img
+                    :src="getImageUrl(goods.images[currentImageIndex])"
+                    :alt="goods.title"
+                    class="goods-main-image"
+                  />
+                </div>
                 <div v-if="goods.images.length > 1" class="flex gap-2 mt-3 overflow-x-auto">
                   <img
                     v-for="(img, idx) in goods.images"
@@ -627,5 +626,22 @@ onMounted(fetchData)
 <style scoped>
 .grid-cols-1 {
   display: grid;
+}
+
+.image-container {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.goods-main-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>
