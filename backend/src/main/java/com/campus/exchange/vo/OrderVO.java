@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class OrderVO {
     private Long id;
+    private String orderNo;
     private Long goodsId;
     private String goodsTitle;
     private String goodsCoverImage;
@@ -25,6 +26,8 @@ public class OrderVO {
     private Long sellerId;
     private String sellerNickname;
     private String sellerAvatar;
+    private Boolean buyerReviewed;
+    private Boolean sellerReviewed;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

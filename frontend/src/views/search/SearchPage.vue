@@ -197,7 +197,10 @@ onMounted(() => {
                   <img :src="getAvatarUrl(goods.sellerAvatar, 'thumb_64')" class="w-5 h-5 rounded-full object-cover" />
                   <span class="text-xs text-gray-400">{{ goods.sellerNickname || '匿名' }}</span>
                 </div>
-                <span class="text-xs text-gray-400">{{ formatDate(goods.createTime) }}</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-400">{{ goods.viewCount || 0 }} 次浏览</span>
+                  <span class="text-xs text-gray-400">{{ formatDate(goods.createTime) }}</span>
+                </div>
               </div>
             </NCard>
           </NGi>

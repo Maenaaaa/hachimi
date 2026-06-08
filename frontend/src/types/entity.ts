@@ -70,6 +70,7 @@ export interface GoodsPublishForm {
 /** 订单 */
 export interface Order {
   id: number
+  orderNo: string
   goodsId: number
   goodsTitle: string
   goodsCoverImage: string

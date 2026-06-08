@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public class Order {
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("order_no")
+    private String orderNo;
     private Long goodsId;
     private Long exchangeGoodsId;
     private Long buyerId;

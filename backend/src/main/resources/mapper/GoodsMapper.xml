@@ -36,7 +36,7 @@
             <when test="dto.sort == 'price_asc'">ORDER BY g.price ASC</when>
             <when test="dto.sort == 'price_desc'">ORDER BY g.price DESC</when>
             <when test="dto.sort == 'views'">ORDER BY g.view_count DESC</when>
-            <when test="dto.sort == 'popular'">ORDER BY g.favorite_count DESC, g.view_count DESC</when>
+            <when test="dto.sort == 'popular'">ORDER BY (LN(g.favorite_count + 1) * 0.6 + LN(g.view_count + 1) * 0.4) DESC</when>
             <otherwise>ORDER BY g.create_time DESC</otherwise>
         </choose>
     </select>
@@ -46,7 +46,7 @@
         FROM goods g
         LEFT JOIN user u ON g.user_id = u.id
         WHERE g.deleted = 0 AND g.status = 'ACTIVE'
-        ORDER BY (g.view_count * 0.7 + g.favorite_count * 0.3) DESC, g.create_time DESC
+        ORDER BY (LN(g.view_count + 1) * 0.4 + LN(g.favorite_count + 1) * 0.6) DESC, g.create_time DESC
         LIMIT #{offset}, #{size}
     </select>
 

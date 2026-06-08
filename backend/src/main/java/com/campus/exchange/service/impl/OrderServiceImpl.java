@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.exchange.dto.CreateOrderDTO;
 import com.campus.exchange.entity.*;
+import com.campus.exchange.mapper.ReviewMapper;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
 import com.campus.exchange.service.NotificationService;
@@ -12,12 +13,14 @@ import com.campus.exchange.service.CreditScoreService;
 import com.campus.exchange.service.OrderService;
 import com.campus.exchange.vo.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -27,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final GoodsMapper goodsMapper;
     private final GoodsImageMapper goodsImageMapper;
     private final UserMapper userMapper;
+    private final ReviewMapper reviewMapper;
     private final CreditScoreService creditScoreService;
     private final NotificationService notificationService;
 
@@ -39,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
         if (goods.getUserId().equals(buyerId)) throw new BusinessException("不能购买自己的商品");
 
         Order order = new Order();
+        order.setOrderNo(generateOrderNo());
         order.setGoodsId(goods.getId());
         order.setBuyerId(buyerId);
         order.setSellerId(goods.getUserId());
@@ -75,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
         if (!"PENDING".equals(order.getStatus())) throw new BusinessException("订单状态不正确");
 
         order.setStatus("IN_PROGRESS");
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         addLog(order.getId(), "CONFIRM", sellerId, "卖家确认订单");
@@ -95,6 +101,7 @@ public class OrderServiceImpl implements OrderService {
         if (!"PENDING".equals(order.getStatus())) throw new BusinessException("订单已确认，无法取消");
 
         order.setStatus("CANCELLED");
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         Goods goods = goodsMapper.selectById(order.getGoodsId());
@@ -121,6 +128,7 @@ public class OrderServiceImpl implements OrderService {
         if (!"IN_PROGRESS".equals(order.getStatus())) throw new BusinessException("订单状态不正确");
 
         order.setStatus("COMPLETED");
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         Goods goods = goodsMapper.selectById(order.getGoodsId());
@@ -154,6 +162,7 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelReason(reason);
         order.setCancelRequesterId(userId);
         order.setCancelRequestTime(java.time.LocalDateTime.now());
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         addLog(order.getId(), "CANCEL_REQUEST", userId, role + "申请取消：" + reason);
@@ -178,6 +187,7 @@ public class OrderServiceImpl implements OrderService {
         String requesterRole = order.getBuyerId().equals(order.getCancelRequesterId()) ? "买家" : "卖家";
 
         order.setStatus("CANCELLED");
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         Goods goods = goodsMapper.selectById(order.getGoodsId());
@@ -208,6 +218,7 @@ public class OrderServiceImpl implements OrderService {
         Long requesterId = order.getCancelRequesterId();
 
         order.setStatus("IN_PROGRESS");
+        order.setUpdateTime(null);
         orderMapper.updateById(order);
 
         orderMapper.update(null, new LambdaUpdateWrapper<Order>()
@@ -261,7 +272,18 @@ public class OrderServiceImpl implements OrderService {
         User buyer = userMapper.selectById(order.getBuyerId());
         User seller = userMapper.selectById(order.getSellerId());
 
+        // 查询评价状态
+        long buyerReviewCount = reviewMapper.selectCount(
+                new LambdaQueryWrapper<Review>()
+                        .eq(Review::getOrderId, order.getId())
+                        .eq(Review::getReviewerId, order.getBuyerId()));
+        long sellerReviewCount = reviewMapper.selectCount(
+                new LambdaQueryWrapper<Review>()
+                        .eq(Review::getOrderId, order.getId())
+                        .eq(Review::getReviewerId, order.getSellerId()));
+
         vo.setId(order.getId());
+        vo.setOrderNo(order.getOrderNo() != null ? order.getOrderNo() : "ORD" + String.format("%010d", order.getId()));
         vo.setGoodsId(order.getGoodsId());
         vo.setGoodsTitle(goods != null ? goods.getTitle() : "");
         vo.setGoodsCoverImage(getFirstImage(order.getGoodsId()));
@@ -283,6 +305,8 @@ public class OrderServiceImpl implements OrderService {
         vo.setSellerId(order.getSellerId());
         vo.setSellerNickname(seller != null ? seller.getNickname() : "");
         vo.setSellerAvatar(seller != null ? seller.getAvatar() : "");
+        vo.setBuyerReviewed(buyerReviewCount > 0);
+        vo.setSellerReviewed(sellerReviewCount > 0);
         vo.setCreateTime(order.getCreateTime());
         vo.setUpdateTime(order.getUpdateTime());
         if (goods != null) vo.setGoodsDescription(goods.getDescription());
@@ -319,8 +343,20 @@ public class OrderServiceImpl implements OrderService {
         User buyer = userMapper.selectById(order.getBuyerId());
         User seller = userMapper.selectById(order.getSellerId());
 
+        // 查询评价状态
+        long buyerReviewCount = reviewMapper.selectCount(
+                new LambdaQueryWrapper<Review>()
+                        .eq(Review::getOrderId, order.getId())
+                        .eq(Review::getReviewerId, order.getBuyerId()));
+        long sellerReviewCount = reviewMapper.selectCount(
+                new LambdaQueryWrapper<Review>()
+                        .eq(Review::getOrderId, order.getId())
+                        .eq(Review::getReviewerId, order.getSellerId()));
+
         OrderVO vo = new OrderVO();
         vo.setId(order.getId());
+        log.info("Order id={}, orderNo from DB={}", order.getId(), order.getOrderNo());
+        vo.setOrderNo(order.getOrderNo() != null ? order.getOrderNo() : "ORD" + String.format("%010d", order.getId()));
         vo.setGoodsId(order.getGoodsId());
         vo.setGoodsTitle(goods != null ? goods.getTitle() : "");
         vo.setGoodsCoverImage(getFirstImage(order.getGoodsId()));
@@ -342,6 +378,8 @@ public class OrderServiceImpl implements OrderService {
         vo.setSellerId(order.getSellerId());
         vo.setSellerNickname(seller != null ? seller.getNickname() : "");
         vo.setSellerAvatar(seller != null ? seller.getAvatar() : "");
+        vo.setBuyerReviewed(buyerReviewCount > 0);
+        vo.setSellerReviewed(sellerReviewCount > 0);
         vo.setCreateTime(order.getCreateTime());
         vo.setUpdateTime(order.getUpdateTime());
         return vo;
@@ -361,6 +399,12 @@ public class OrderServiceImpl implements OrderService {
                 new LambdaQueryWrapper<GoodsImage>().eq(GoodsImage::getGoodsId, goodsId)
                         .orderByAsc(GoodsImage::getSortOrder).last("LIMIT 1"));
         return img != null ? img.getImageUrl() : "";
+    }
+
+    private String generateOrderNo() {
+        long timestamp = System.currentTimeMillis();
+        long random = (long) (Math.random() * 100000);
+        return String.format("%013d%05d", timestamp, random);
     }
 
     private String getGoodsTitle(Long goodsId) {

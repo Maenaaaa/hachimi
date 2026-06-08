@@ -14,11 +14,13 @@ import com.campus.exchange.vo.GoodsDetailVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class GoodsServiceImpl implements GoodsService {
     private final FollowMapper followMapper;
     private final UserMapper userMapper;
     private final OrderMapper orderMapper;
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     @Transactional
@@ -125,6 +128,12 @@ public class GoodsServiceImpl implements GoodsService {
     public GoodsDetailVO getDetail(Long goodsId, Long currentUserId) {
         Goods goods = goodsMapper.selectById(goodsId);
         if (goods == null || goods.getDeleted() == 1) throw new BusinessException(404, "商品不存在或已下架");
+
+        if (currentUserId != null) {
+            recordView(goodsId, currentUserId);
+            goods = goodsMapper.selectById(goodsId);
+        }
+
         User currentUser = currentUserId != null ? userMapper.selectById(currentUserId) : null;
         boolean isOwner = goods.getUserId().equals(currentUserId);
         boolean isAdmin = currentUser != null && "ADMIN".equals(currentUser.getRole());
@@ -185,6 +194,10 @@ public class GoodsServiceImpl implements GoodsService {
 
     @Override
     public void recordView(Long goodsId, Long userId) {
+        String redisKey = "goods_view:" + goodsId + ":" + userId;
+        Boolean exists = redisTemplate.hasKey(redisKey);
+        if (Boolean.TRUE.equals(exists)) return;
+
         Goods goods = goodsMapper.selectById(goodsId);
         if (goods != null) {
             goods.setViewCount(goods.getViewCount() + 1);
@@ -195,6 +208,8 @@ public class GoodsServiceImpl implements GoodsService {
             view.setUserId(userId);
             view.setViewTime(LocalDateTime.now());
             goodsViewMapper.insert(view);
+
+            redisTemplate.opsForValue().set(redisKey, "1", 1, TimeUnit.HOURS);
         }
     }
 

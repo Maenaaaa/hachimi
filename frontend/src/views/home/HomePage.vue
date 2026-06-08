@@ -202,7 +202,10 @@ function goToGoods(id: number) {
                     />
                     <span class="text-xs text-gray-400">{{ goods.sellerNickname || goods.userNickname || '匿名' }}</span>
                   </div>
-                  <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">{{ goods.viewCount || 0 }} 次浏览</span>
+                    <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>
+                  </div>
                 </div>
               </NCard>
             </NGi>
@@ -257,7 +260,10 @@ function goToGoods(id: number) {
                     />
                     <span class="text-xs text-gray-400">{{ goods.sellerNickname || goods.userNickname || '匿名' }}</span>
                   </div>
-                  <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">{{ goods.viewCount || 0 }} 次浏览</span>
+                    <span class="text-xs text-gray-400">{{ formatDate(goods.createTime || goods.createdAt) }}</span>
+                  </div>
                 </div>
               </NCard>
             </NGi>

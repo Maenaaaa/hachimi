@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getOrderDetail, confirmOrder, cancelOrder, completeOrder, requestCancelOrder, approveCancelOrder, rejectCancelOrder, createDispute } from '@/api/order'
 import { getReviewByOrderId, createReview } from '@/api/review'
-import { getImageUrl, getAvatarUrl, formatPrice, formatDate } from '@/utils'
+import { getImageUrl, getAvatarUrl, formatPrice, formatDate, formatDateTime } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import { ORDER_STATUS } from '@/constants'
 import {
@@ -246,7 +246,7 @@ onMounted(loadOrder)
             </div>
             <div>
               <div class="text-lg font-bold" :style="{ color: statusConfig.color }">{{ statusConfig.label }}</div>
-              <div class="text-xs text-gray-400">订单号 {{ order.id }}</div>
+              <div class="text-xs text-gray-400">订单号 {{ order.orderNo }}</div>
             </div>
           </div>
 
@@ -285,6 +285,7 @@ onMounted(loadOrder)
                 <span class="text-[#3B82F6] font-bold">{{ formatPrice(order.amount) }}</span>
                 <NTag v-if="order.goodsTradeType === 'EXCHANGE'" size="tiny" type="success">置换</NTag>
               </div>
+              <div v-if="order.goodsDescription" class="text-xs text-gray-400 mt-1 line-clamp-2">{{ order.goodsDescription }}</div>
             </div>
           </div>
           <div v-if="order.exchangeGoodsTitle" class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3">
@@ -338,10 +339,27 @@ onMounted(loadOrder)
           </div>
         </NCard>
 
-        <!-- Meeting Info -->
-        <NCard v-if="order.meetTime || order.meetPlace || order.remark" :bordered="true" style="border-radius: 12px" class="mb-4">
-          <template #header><span class="text-sm font-bold">交易信息</span></template>
+        <!-- Order & Meeting Info -->
+        <NCard :bordered="true" style="border-radius: 12px" class="mb-4">
+          <template #header><span class="text-sm font-bold">订单信息</span></template>
           <div class="space-y-2 text-sm">
+            <div class="flex gap-2">
+              <span class="text-gray-400 w-16 shrink-0">订单号</span>
+              <span class="text-gray-700 font-mono">{{ order.orderNo }}</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-gray-400 w-16 shrink-0">下单时间</span>
+              <span class="text-gray-700">{{ formatDateTime(order.createTime) }}</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-gray-400 w-16 shrink-0">更新时间</span>
+              <span class="text-gray-700">{{ formatDateTime(order.updateTime) }}</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-gray-400 w-16 shrink-0">交易金额</span>
+              <span class="text-[#3B82F6] font-bold">{{ formatPrice(order.amount) }}</span>
+            </div>
+            <NDivider v-if="order.meetTime || order.meetPlace || order.remark" style="margin: 8px 0" />
             <div v-if="order.meetTime" class="flex gap-2">
               <span class="text-gray-400 w-16 shrink-0">约定时间</span>
               <span class="text-gray-700">{{ order.meetTime }}</span>
