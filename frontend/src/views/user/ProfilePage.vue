@@ -7,7 +7,7 @@ import { getMyGoods, getUserGoods } from '@/api/goods'
 import { getMyFavorites } from '@/api/favorite'
 import { getFollowers, getFollowing, addFollow, removeFollow } from '@/api/follow'
 import { getUserReviews } from '@/api/review'
-import { formatPrice, formatDate } from '@/utils'
+import { formatPrice, formatDate, getImageUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import {
   NAvatar, NButton, NCard, NTag, NTab, NTabPane, NTabs, NEmpty, NSpin, NModal, NIcon, useMessage,

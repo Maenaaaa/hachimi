@@ -3,9 +3,9 @@ package com.campus.exchange.controller;
 import com.campus.exchange.common.Result;
 import com.campus.exchange.service.FileService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,14 +14,15 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/upload")
 @RequiredArgsConstructor
 public class FileController {
 
     private final FileService fileService;
 
-    @PostMapping("/upload")
+    @PostMapping
     public Result<String> upload(@RequestParam("file") MultipartFile file,
                                   @RequestParam(defaultValue = "goods-images") String bucket) {
         if (file.isEmpty()) {
@@ -36,26 +37,5 @@ public class FileController {
             return Result.fail("图片大小不能超过 5MB");
         }
         return Result.ok(fileService.upload(file, bucket));
-    }
-
-    @GetMapping("/file/{bucket}/{objectKey}")
-    public ResponseEntity<InputStreamResource> proxyFile(@PathVariable String bucket,
-                                                          @PathVariable String objectKey) {
-        try {
-            objectKey = URLDecoder.decode(objectKey, StandardCharsets.UTF_8);
-            InputStream is = fileService.getObject(bucket, objectKey);
-            String contentType = "image/png";
-            if (objectKey.endsWith(".jpg") || objectKey.endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (objectKey.endsWith(".webp")) {
-                contentType = "image/webp";
-            }
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, contentType)
-                    .header(HttpHeaders.CACHE_CONTROL, "max-age=86400")
-                    .body(new InputStreamResource(is));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 }

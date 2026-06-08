@@ -39,28 +39,27 @@ export function useWebSocket() {
 
   function subscribe(destination: string, callback: (body: string) => void) {
     function doSubscribe() {
-      const sub = globalClient?.subscribe(destination, (message) => {
+      if (!globalClient) return null
+      const sub = globalClient.subscribe(destination, (message) => {
         callback(message.body)
       })
-      if (sub) {
-        subscriptions.push(() => sub.unsubscribe())
-      }
+      subscriptions.push(() => sub.unsubscribe())
       return sub
     }
 
-    if (globalClient?.active) {
+    if (connected.value) {
       return doSubscribe()
     }
 
     connect()
     return new Promise<void>((resolve) => {
       const check = setInterval(() => {
-        if (globalClient?.active) {
+        if (connected.value) {
           clearInterval(check)
           doSubscribe()
           resolve()
         }
-      }, 100)
+      }, 200)
       setTimeout(() => clearInterval(check), 5000)
     }) as any
   }
