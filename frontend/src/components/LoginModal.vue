@@ -120,7 +120,7 @@ function switchTab(tab: 'login' | 'register') {
         <div class="w-14 h-14 bg-[#3B82F6] rounded-2xl flex items-center justify-center mx-auto mb-3">
           <span class="text-white text-xl font-bold">C</span>
         </div>
-        <h2 class="text-xl font-bold text-gray-800">校园闲置交换</h2>
+        <h2 class="text-xl font-bold text-gray-800">校园淘</h2>
       </div>
 
       <NTabs v-model:value="activeTab" type="line" justify-content="center" @update:value="switchTab">

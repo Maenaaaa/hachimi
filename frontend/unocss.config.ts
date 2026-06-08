@@ -12,11 +12,24 @@ export default defineConfig({
     'text-secondary': 'text-gray-500 dark:text-gray-400',
     'page-bg': 'dark:bg-[#0f1117] bg-[#F8FAFC]',
     'layout-header': 'dark:bg-gray-900 dark:border-gray-800 bg-white border-b',
+    'container-main': 'max-w-[1400px] mx-auto px-6',
+    'section-spacing': 'mb-10',
+    'section-title': 'text-lg font-bold text-gray-800 dark:text-gray-100',
   },
   rules: [
     ['max-w-1200px', { 'max-width': '1200px' }],
+    ['max-w-1400px', { 'max-width': '1400px' }],
+    ['max-w-500px', { 'max-width': '500px' }],
     ['max-w-700px', { 'max-width': '700px' }],
     ['max-w-420px', { 'max-width': '420px' }],
+    ['header-shadow', { 'box-shadow': '0 2px 8px rgba(0,0,0,0.06)' }],
+    ['card-shadow', { 'box-shadow': '0 2px 12px rgba(0,0,0,0.08)' }],
+    ['line-clamp-2', {
+      'overflow': 'hidden',
+      'display': '-webkit-box',
+      '-webkit-box-orient': 'vertical',
+      '-webkit-line-clamp': '2',
+    }],
   ],
   theme: {
     colors: {

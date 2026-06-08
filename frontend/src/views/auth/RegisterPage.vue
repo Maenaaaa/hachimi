@@ -91,7 +91,7 @@ async function handleRegister() {
           <span class="text-white text-2xl font-bold">C</span>
         </div>
         <h2 class="text-2xl font-bold text-gray-800">创建账号</h2>
-        <p class="text-gray-400 text-sm mt-1">加入校园闲置交换社区</p>
+        <p class="text-gray-400 text-sm mt-1">加入校园淘社区</p>
       </div>
 
       <NAlert v-if="errorMsg" type="error" :show-icon="true" closable class="mb-4" @close="errorMsg = ''">

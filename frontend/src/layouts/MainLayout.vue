@@ -189,20 +189,30 @@ watch(
 
 <template>
   <NLayout class="min-h-screen page-bg">
-    <NLayoutHeader bordered class="layout-header" style="height: 64px">
-      <div class="max-w-1200px mx-auto h-full flex items-center px-4 justify-between">
-        <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/')">
-          <div class="w-8 h-8 bg-[#3B82F6] rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
-          <span class="text-lg font-bold text-gray-800 dark:text-gray-100 hidden sm:block">校园闲置交换</span>
+    <NLayoutHeader class="layout-header header-shadow" style="height: 64px; border-bottom: 1px solid var(--n-border-color)">
+      <div class="max-w-[1400px] mx-auto h-full flex items-center px-6 justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" @click="router.push('/')">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M17 1l4 4-4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 23l-4-4 4-4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="text-lg font-bold text-gray-800 dark:text-gray-100 hidden sm:block">校园淘</span>
         </div>
 
-        <div class="flex-1 max-w-400px mx-4 hidden md:block">
+        <div class="flex-1 max-w-[500px] mx-6 hidden md:block">
           <NInput
             v-model:value="keyword"
             placeholder="搜索闲置物品..."
             clearable
             @keyup.enter="handleSearch"
           >
+            <template #prefix>
+              <NIcon><Search24Filled /></NIcon>
+            </template>
             <template #suffix>
               <NButton quaternary circle size="tiny" @click="handleSearch">
                 <template #icon>
@@ -213,7 +223,7 @@ watch(
           </NInput>
         </div>
 
-        <NSpace align="center" :size="12">
+        <NSpace align="center" :size="16">
           <NButton quaternary circle @click="appStore.toggleTheme()">
             <template #icon>
               <NIcon><WeatherSunny48Filled v-if="appStore.isDark" /><WeatherMoon48Filled v-else /></NIcon>
@@ -221,7 +231,7 @@ watch(
           </NButton>
 
           <template v-if="userStore.isLoggedIn">
-            <NButton type="primary" size="small" @click="goToPublish">
+            <NButton type="primary" @click="goToPublish">
               <template #icon>
                 <NIcon><Add24Filled /></NIcon>
               </template>
@@ -247,21 +257,21 @@ watch(
             <NDropdown trigger="click" :options="userMenuOptions" @select="handleUserMenuSelect">
               <img 
                 :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
-                class="w-8 h-8 rounded-full object-cover cursor-pointer"
+                class="w-9 h-9 rounded-full object-cover cursor-pointer border-2 border-gray-100 dark:border-gray-700"
               />
             </NDropdown>
           </template>
 
           <template v-else>
-            <NButton quaternary size="small" @click="appStore.openLoginModal()">登录</NButton>
-            <NButton type="primary" size="small" @click="appStore.openLoginModal()">注册</NButton>
+            <NButton quaternary @click="appStore.openLoginModal()">登录</NButton>
+            <NButton type="primary" @click="appStore.openLoginModal()">注册</NButton>
           </template>
         </NSpace>
       </div>
     </NLayoutHeader>
 
-    <NLayoutContent class="p-4">
-      <div class="max-w-1200px mx-auto">
+    <NLayoutContent :native-scrollbar="false" style="height: calc(100vh - 64px)">
+      <div class="max-w-[1400px] mx-auto px-6 py-6">
         <router-view />
       </div>
     </NLayoutContent>
@@ -270,10 +280,24 @@ watch(
 </template>
 
 <style scoped>
-.max-w-1200px {
-  max-width: 1200px;
-}
 .min-h-screen {
   min-height: 100vh;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+}
+
+.logo-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
 }
 </style>

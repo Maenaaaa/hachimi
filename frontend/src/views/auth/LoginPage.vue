@@ -78,7 +78,7 @@ async function handleLogin() {
           <span class="text-white text-2xl font-bold">C</span>
         </div>
         <h2 class="text-2xl font-bold text-gray-800">欢迎回来</h2>
-        <p class="text-gray-400 text-sm mt-1">登录你的校园闲置交换账号</p>
+        <p class="text-gray-400 text-sm mt-1">登录你的校园淘账号</p>
       </div>
 
       <NAlert v-if="errorMsg" type="error" :show-icon="true" closable class="mb-4" @close="errorMsg = ''">

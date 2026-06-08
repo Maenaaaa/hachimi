@@ -1,12 +1,24 @@
 import { get, put, post, upload } from '@/utils/request'
-import type { User, UserStats, ProfileForm, PasswordForm } from '@/types/entity'
+import type { User, ProfileForm, PasswordForm } from '@/types/entity'
+
+export interface UserPublicVO {
+  id: number
+  nickname: string
+  avatar: string
+  school: string
+  creditScore: number
+  realName?: string
+  goodsCount?: number
+  followerCount?: number
+  followingCount?: number
+}
 
 export function getUserProfile() {
   return get<User>('/user/profile')
 }
 
 export function getUserPublicProfile(userId: number) {
-  return get<User>(`/user/profile/${userId}`)
+  return get<UserPublicVO>(`/user/profile/${userId}`)
 }
 
 export function updateUserProfile(data: ProfileForm) {
@@ -23,8 +35,4 @@ export function uploadAvatar(formData: FormData) {
 
 export function verifyUser(data: { realName: string; idNumber: string }) {
   return post<null>('/user/verify', data)
-}
-
-export function getUserStats(userId: number) {
-  return get<UserStats>(`/user/stats/${userId}`)
 }
