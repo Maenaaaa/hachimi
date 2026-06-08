@@ -1,7 +1,7 @@
 import { get, post, put } from '@/utils/request'
 import type { Order } from '@/types/entity'
 
-export function createOrder(data: { goodsId: number; remark?: string; meetTime?: string; meetPlace?: string }) {
+export function createOrder(data: { goodsId: number; exchangeGoodsId?: number; remark?: string; meetTime?: string; meetPlace?: string }) {
   return post<Order>('/order', data)
 }
 
@@ -23,4 +23,8 @@ export function cancelOrder(id: number) {
 
 export function completeOrder(id: number) {
   return put<Order>(`/order/${id}/complete`)
+}
+
+export function getOrderDetail(id: number) {
+  return get<Order>(`/order/${id}`)
 }

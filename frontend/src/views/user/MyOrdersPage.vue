@@ -101,6 +101,7 @@ async function submitReview() {
 }
 
 function goToGoods(id: number) { router.push(`/goods/${id}`) }
+function goToOrder(id: number) { router.push(`/order/${id}`) }
 
 onMounted(loadOrders)
 </script>
@@ -115,13 +116,13 @@ onMounted(loadOrders)
           <NSpin :show="loading">
             <div v-if="tabInfo.orders().length > 0" class="mt-4 space-y-3">
               <div v-for="order in tabInfo.orders()" :key="order.id">
-                <NCard :bordered="true" style="border-radius: 12px">
+                <NCard :bordered="true" style="border-radius: 12px" class="cursor-pointer hover:shadow-md transition-shadow" @click="goToOrder(order.id)">
                   <div class="flex items-start gap-4">
-                    <img :src="order.goodsCoverImage || ''" class="w-20 h-20 object-cover rounded-lg cursor-pointer"
-                      @click="goToGoods(order.goodsId)" />
+                    <img :src="order.goodsCoverImage || ''" class="w-20 h-20 object-cover rounded-lg"
+                      @click.stop="goToGoods(order.goodsId)" />
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between flex-wrap gap-2">
-                        <span class="font-semibold text-gray-800 cursor-pointer hover:text-[#3B82F6] truncate" @click="goToGoods(order.goodsId)">{{ order.goodsTitle }}</span>
+                        <span class="font-semibold text-gray-800 cursor-pointer hover:text-[#3B82F6] truncate" @click.stop="goToGoods(order.goodsId)">{{ order.goodsTitle }}</span>
                         <NTag size="small" :type="statusType[order.status] || 'default'">{{ statusLabels[order.status] || order.status }}</NTag>
                       </div>
                       <div class="text-[#3B82F6] font-bold text-lg mt-1">
@@ -148,7 +149,7 @@ onMounted(loadOrders)
                             @click.stop="router.push('/profile?userId=' + tabInfo.counterId(order))">{{ tabInfo.counterName(order) }}</span>
                           <span class="ml-2">{{ formatDate(order.createTime) }}</span>
                         </div>
-                        <NSpace>
+                        <NSpace @click.stop>
                           <template v-if="tabInfo.isSeller(order)">
                             <NButton v-if="order.status === 'PENDING'" size="tiny" type="primary" @click="handleConfirm(order.id)">确认</NButton>
                             <NButton v-if="order.status === 'PENDING'" size="tiny" @click="handleCancel(order.id)">拒绝</NButton>

@@ -28,6 +28,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'profile', name: 'Profile', component: () => import('@/views/user/ProfilePage.vue') },
       { path: 'my-goods', name: 'MyGoods', component: () => import('@/views/user/MyGoodsPage.vue') },
       { path: 'my-orders', name: 'MyOrders', component: () => import('@/views/user/MyOrdersPage.vue') },
+      { path: 'order/:id', name: 'OrderDetail', component: () => import('@/views/order/OrderDetailPage.vue') },
       { path: 'settings', name: 'Settings', component: () => import('@/views/user/AccountSettingsPage.vue') },
       { path: 'notifications', name: 'Notifications', component: () => import('@/views/user/NotificationsPage.vue') },
       { path: 'review/:id', name: 'ReviewDetail', component: () => import('@/views/review/ReviewDetailPage.vue') },

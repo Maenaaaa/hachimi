@@ -32,7 +32,7 @@ async function handleClick(n: any) {
     } catch { /* ignore */ }
   }
   if (n.relatedId) {
-    if (n.type === 'ORDER') router.push('/my-orders')
+    if (n.type === 'ORDER') router.push(`/order/${n.relatedId}`)
     else if (n.title === '收到新评价') router.push(`/review/${n.relatedId}`)
     else if (n.type === 'REVIEW') router.push(`/goods/${n.relatedId}`)
   }
