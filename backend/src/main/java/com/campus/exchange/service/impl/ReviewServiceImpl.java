@@ -24,6 +24,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewMapper reviewMapper;
     private final OrderMapper orderMapper;
     private final UserMapper userMapper;
+    private final GoodsMapper goodsMapper;
+    private final GoodsImageMapper goodsImageMapper;
     private final NotificationService notificationService;
 
     @Override
@@ -57,6 +59,30 @@ public class ReviewServiceImpl implements ReviewService {
                 (reviewer != null ? reviewer.getNickname() : "用户") + "给您打出了" + dto.getRating() + "星评价", review.getId());
 
         return toVO(review);
+    }
+
+    @Override
+    public ReviewVO getById(Long reviewId) {
+        Review review = reviewMapper.selectById(reviewId);
+        if (review == null) throw new BusinessException("评价不存在");
+        return toVO(review);
+    }
+
+    @Override
+    public ReviewVO getByOrderId(Long orderId) {
+        Review review = reviewMapper.selectOne(
+                new LambdaQueryWrapper<Review>().eq(Review::getOrderId, orderId)
+                        .eq(Review::getDeleted, 0).last("LIMIT 1"));
+        if (review == null) throw new BusinessException("评价不存在");
+        return toVO(review);
+    }
+
+    @Override
+    public List<ReviewVO> getBothByOrderId(Long orderId) {
+        List<Review> reviews = reviewMapper.selectList(
+                new LambdaQueryWrapper<Review>().eq(Review::getOrderId, orderId)
+                        .eq(Review::getDeleted, 0));
+        return reviews.stream().map(this::toVO).toList();
     }
 
     @Override
@@ -98,6 +124,21 @@ public class ReviewServiceImpl implements ReviewService {
         vo.setRating(review.getRating());
         vo.setContent(review.getContent());
         vo.setCreateTime(review.getCreateTime());
+
+        if (review.getOrderId() != null) {
+            Order order = orderMapper.selectById(review.getOrderId());
+            if (order != null) {
+                vo.setGoodsId(order.getGoodsId());
+                Goods goods = goodsMapper.selectById(order.getGoodsId());
+                if (goods != null) {
+                    vo.setGoodsTitle(goods.getTitle());
+                    GoodsImage img = goodsImageMapper.selectOne(
+                            new LambdaQueryWrapper<GoodsImage>().eq(GoodsImage::getGoodsId, goods.getId())
+                                    .orderByAsc(GoodsImage::getSortOrder).last("LIMIT 1"));
+                    vo.setGoodsCoverImage(img != null ? img.getImageUrl() : "");
+                }
+            }
+        }
         return vo;
     }
 }

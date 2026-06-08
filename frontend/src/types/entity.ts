@@ -93,12 +93,15 @@ export interface Order {
 export interface Review {
   id: number
   orderId: number
-  userId: number
-  user: User
-  targetUserId: number
+  goodsId?: number
+  goodsTitle?: string
+  goodsCoverImage?: string
+  reviewerId: number
+  reviewerNickname: string
+  reviewerAvatar: string
   rating: number
   content: string
-  createdAt: string
+  createTime: string
 }
 
 /** 收藏 */
@@ -160,25 +163,26 @@ export interface Announcement {
   id: number
   title: string
   content: string
-  status: 'published' | 'draft'
-  priority: 'low' | 'normal' | 'high'
-  createdAt: string
-  updatedAt: string
+  publisherId?: number
+  createTime: string
+  updateTime: string
 }
 
 /** 举报 */
 export interface Report {
   id: number
   reporterId: number
-  reporter: User
+  reporterNickname: string
+  type: string
   targetId: number
-  targetType: 'goods' | 'user'
   reason: string
   description: string
-  status: 'pending' | 'resolved' | 'dismissed'
-  handleNote: string
-  createdAt: string
-  updatedAt: string
+  status: string
+  handlerId?: number
+  handlerNickname?: string
+  handleNote?: string
+  handleTime?: string
+  createTime: string
 }
 
 /** 管理后台统计 */

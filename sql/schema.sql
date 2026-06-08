@@ -90,6 +90,7 @@ CREATE TABLE `goods` (
   `category_id`    BIGINT         NOT NULL COMMENT '分类ID',
   `user_id`        BIGINT         NOT NULL COMMENT '发布者ID',
   `status`         VARCHAR(30)    NOT NULL DEFAULT 'PENDING_REVIEW' COMMENT '状态: PENDING_REVIEW, ACTIVE, INACTIVE, REJECTED, TAKEN_DOWN',
+  `trade_type`     VARCHAR(30)    NOT NULL DEFAULT 'FACE_TO_FACE' COMMENT '交易方式: FACE_TO_FACE, DELIVERY, BOTH',
   `view_count`     INT            NOT NULL DEFAULT 0 COMMENT '浏览次数',
   `favorite_count` INT            NOT NULL DEFAULT 0 COMMENT '收藏次数',
   `create_time`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',

@@ -7,6 +7,7 @@ import com.campus.exchange.entity.*;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
 import com.campus.exchange.service.NotificationService;
+import com.campus.exchange.service.CreditScoreService;
 import com.campus.exchange.service.OrderService;
 import com.campus.exchange.vo.*;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class OrderServiceImpl implements OrderService {
     private final GoodsMapper goodsMapper;
     private final GoodsImageMapper goodsImageMapper;
     private final UserMapper userMapper;
+    private final CreditScoreService creditScoreService;
     private final NotificationService notificationService;
 
     @Override
@@ -120,9 +122,16 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("COMPLETED");
         orderMapper.updateById(order);
 
+        Goods goods = goodsMapper.selectById(order.getGoodsId());
+        if (goods != null) {
+            goods.setStatus("SOLD");
+            goodsMapper.updateById(goods);
+        }
+
         addLog(order.getId(), "COMPLETE", buyerId, "买家确认完成");
         notificationService.create(order.getSellerId(), "ORDER", "订单已完成",
                 "订单已完成，请及时评价买家", order.getId());
+        creditScoreService.addScoreOnTradeComplete(order.getSellerId());
 
         return toOrderVO(order);
     }

@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getGoodsDetail } from '@/api/goods'
+import { getGoodsDetail, toggleGoodsStatus, deleteGoods } from '@/api/goods'
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import { addFollow, removeFollow } from '@/api/follow'
 import { createOrder } from '@/api/order'
 import { getComments, createComment } from '@/api/comment'
+import { createReport } from '@/api/report'
 import { getImageUrl, formatPrice, formatDate } from '@/utils'
 import { useUserStore } from '@/stores/user'
-import { GOODS_CONDITIONS } from '@/constants'
+import { GOODS_CONDITIONS, GOODS_STATUS } from '@/constants'
 import type { Goods, Review } from '@/types/entity'
 import {
   NButton,
@@ -64,6 +65,12 @@ const exchangeOfferId = ref<number | null>(null)
 const myExchangeGoods = ref<any[]>([])
 const submitting = ref(false)
 const currentImageIndex = ref(0)
+
+// 举报相关状态
+const showReportModal = ref(false)
+const reportReason = ref('')
+const reportDescription = ref('')
+const submittingReport = ref(false)
 
 const goodsId = computed(() => Number(route.params.id))
 
@@ -204,6 +211,81 @@ function handleReply(comment: any) {
   commentText.value = ''
 }
 
+// 举报相关函数
+function openReportModal() {
+  if (!userStore.isLoggedIn) {
+    message.warning('请先登录')
+    router.push('/login')
+    return
+  }
+  reportReason.value = ''
+  reportDescription.value = ''
+  showReportModal.value = true
+}
+
+function handleRelist() {
+  dialog.info({
+    title: '重新上架',
+    content: '将重新提交审核，审核通过后商品将恢复上架',
+    positiveText: '确认上架',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await toggleGoodsStatus(goodsId.value, 'PENDING_REVIEW')
+        message.success('已重新提交审核')
+        fetchData()
+      } catch {
+        message.error('操作失败')
+      }
+    },
+  })
+}
+
+function handleDeleteGoods() {
+  dialog.warning({
+    title: '确认删除',
+    content: '确定要删除该商品吗？此操作不可恢复。',
+    positiveText: '确定删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await deleteGoods(goodsId.value)
+        message.success('删除成功')
+        router.push('/my-goods')
+      } catch {
+        message.error('删除失败')
+      }
+    },
+  })
+}
+
+async function submitReport() {
+  if (!reportReason.value) {
+    message.warning('请选择举报理由')
+    return
+  }
+  if (!goods.value) return
+  
+  submittingReport.value = true
+  try {
+    await createReport({
+      targetId: goods.value.id,
+      type: 'GOODS',
+      reason: reportReason.value,
+      description: reportDescription.value || undefined,
+    })
+    message.success('举报已提交，感谢您的反馈')
+    showReportModal.value = false
+    reportReason.value = ''
+    reportDescription.value = ''
+  } catch (err: unknown) {
+    const e = err as { message?: string }
+    message.error(e.message || '举报失败')
+  } finally {
+    submittingReport.value = false
+  }
+}
+
 onMounted(fetchData)
 </script>
 
@@ -319,6 +401,41 @@ onMounted(fetchData)
               </div>
             </NCard>
 
+            <!-- Owner Actions -->
+            <NCard :bordered="true" style="border-radius: 12px" v-if="isOwner">
+              <div class="space-y-3">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                  <span>商品状态：</span>
+                  <NTag
+                    :type="goods.status === 'ACTIVE' ? 'success' : goods.status === 'TAKEN_DOWN' || goods.status === 'REJECTED' ? 'error' : 'warning'"
+                    size="small"
+                  >{{ GOODS_STATUS[goods.status] || goods.status }}</NTag>
+                </div>
+                <div class="flex gap-2">
+                  <NButton type="primary" size="small" @click="router.push(`/goods/${goodsId}/edit`)">
+                    编辑商品
+                  </NButton>
+                  <NButton
+                    v-if="goods.status === 'TAKEN_DOWN' || goods.status === 'INACTIVE'"
+                    type="success"
+                    size="small"
+                    @click="handleRelist"
+                  >
+                    重新上架
+                  </NButton>
+                  <NButton
+                    v-if="goods.status === 'TAKEN_DOWN' || goods.status === 'INACTIVE'"
+                    type="error"
+                    size="small"
+                    quaternary
+                    @click="handleDeleteGoods"
+                  >
+                    删除商品
+                  </NButton>
+                </div>
+              </div>
+            </NCard>
+
             <!-- Actions -->
             <NCard :bordered="true" style="border-radius: 12px" v-if="!isOwner">
               <div class="flex gap-3">
@@ -344,7 +461,7 @@ onMounted(fetchData)
                   <template #icon><NIcon><Share24Filled /></NIcon></template>
                   相似
                 </NButton>
-                <NButton quaternary size="small">
+                <NButton quaternary size="small" @click="openReportModal">
                   <template #icon><NIcon><Flag24Filled /></NIcon></template>
                   举报
                 </NButton>
@@ -460,6 +577,29 @@ onMounted(fetchData)
           @click="submitOrder">
           {{ goods?.tradeType === 'EXCHANGE' ? '发起置换' : '确认购买' }}
         </NButton>
+      </div>
+    </NModal>
+
+    <!-- Report Modal -->
+    <NModal v-model:show="showReportModal" title="举报商品" preset="card" style="width: 420px; border-radius: 12px">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500">请选择举报理由：</p>
+        <NRadioGroup v-model:value="reportReason" class="flex flex-col gap-2">
+          <NRadio value="FALSE_INFO">虚假信息</NRadio>
+          <NRadio value="FRAUD">欺诈行为</NRadio>
+          <NRadio value="AD">广告内容</NRadio>
+          <NRadio value="VIOLATION">违规内容</NRadio>
+        </NRadioGroup>
+        <NInput
+          v-model:value="reportDescription"
+          type="textarea"
+          placeholder="补充说明（选填）"
+          :rows="3"
+        />
+        <div class="flex gap-2">
+          <NButton @click="showReportModal = false" class="flex-1">取消</NButton>
+          <NButton type="error" :loading="submittingReport" @click="submitReport" class="flex-1">提交举报</NButton>
+        </div>
       </div>
     </NModal>
   </div>

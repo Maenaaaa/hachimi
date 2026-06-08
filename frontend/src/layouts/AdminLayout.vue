@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue'
+import { ref, computed, h, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
@@ -48,10 +48,11 @@ const menuOptions = [
   { label: '用户管理', key: '/admin/users', icon: () => h(NIcon, null, { default: () => h(Person24Filled) }) },
   { label: '商品管理', key: '/admin/goods', icon: () => h(NIcon, null, { default: () => h(Gift24Filled) }) },
   { label: '举报管理', key: '/admin/reports', icon: () => h(NIcon, null, { default: () => h(Warning24Filled) }) },
+  { label: '认证审核', key: '/admin/verifications', icon: () => h(NIcon, null, { default: () => h(Person24Filled) }) },
   { label: '公告管理', key: '/admin/announcements', icon: () => h(NIcon, null, { default: () => h(Megaphone24Filled) }) },
 ]
 
-const currentKey = ref(route.path)
+const currentKey = computed(() => route.path)
 
 function handleMenuUpdate(key: string) {
   router.push(key)

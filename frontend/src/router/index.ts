@@ -30,6 +30,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'my-orders', name: 'MyOrders', component: () => import('@/views/user/MyOrdersPage.vue') },
       { path: 'settings', name: 'Settings', component: () => import('@/views/user/AccountSettingsPage.vue') },
       { path: 'notifications', name: 'Notifications', component: () => import('@/views/user/NotificationsPage.vue') },
+      { path: 'review/:id', name: 'ReviewDetail', component: () => import('@/views/review/ReviewDetailPage.vue') },
+      { path: 'goods/:id/edit', name: 'EditGoods', component: () => import('@/views/goods/EditGoodsPage.vue') },
     ],
   },
   {
@@ -49,6 +51,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'users', name: 'AdminUsers', component: () => import('@/views/admin/UserManagementPage.vue') },
       { path: 'goods', name: 'AdminGoods', component: () => import('@/views/admin/GoodsManagementPage.vue') },
       { path: 'reports', name: 'AdminReports', component: () => import('@/views/admin/ReportManagementPage.vue') },
+      { path: 'verifications', name: 'AdminVerifications', component: () => import('@/views/admin/VerificationManagementPage.vue') },
       { path: 'announcements', name: 'AdminAnnouncements', component: () => import('@/views/admin/AnnouncementManagementPage.vue') },
     ],
   },
@@ -89,8 +92,8 @@ router.beforeEach((to, _from, next) => {
     }
   }
 
-  // Admin users can only access admin routes
-  if (isAdmin && !to.path.startsWith('/admin')) {
+  // Admin users going to root get redirected to admin panel
+  if (isAdmin && to.path === '/') {
     next({ path: '/admin' })
     return
   }

@@ -45,7 +45,7 @@ const formData = ref<GoodsPublishForm>({
   price: 0,
   originalPrice: null,
   images: [],
-  condition: 'good',
+  condition: 'MINOR_WEAR',
   categoryId: 0,
   campus: '主校区',
   tradeType: 'SELL',
@@ -60,10 +60,11 @@ const formModel = computed(() => ({
 }))
 
 const conditionOptions = [
-  { label: '全新', value: 'new' },
-  { label: '几乎全新', value: 'like_new' },
-  { label: '良好', value: 'good' },
-  { label: '一般', value: 'fair' },
+  { label: '全新', value: 'BRAND_NEW' },
+  { label: '几乎全新', value: 'LIKE_NEW' },
+  { label: '轻微使用', value: 'MINOR_WEAR' },
+  { label: '明显使用', value: 'VISIBLE_WEAR' },
+  { label: '使用较重', value: 'HEAVILY_USED' },
 ]
 
 const categoryOptions = computed(() =>

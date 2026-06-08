@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getGoodsRecommend, getGoodsLatest } from '@/api/goods'
 import { getCategories } from '@/api/category'
@@ -21,9 +21,13 @@ import {
   NAvatar,
   NSkeleton,
   NScrollbar,
+  NModal,
+  NCheckbox,
+  useMessage,
 } from 'naive-ui'
 
 const router = useRouter()
+const message = useMessage()
 
 const banners = [
   { id: 1, image: 'https://picsum.photos/seed/banner1/1200/400', title: '闲置变宝藏', subtitle: '让你的闲置物品找到新主人' },
@@ -37,6 +41,52 @@ const latestGoods = ref<Goods[]>([])
 const announcements = ref<Announcement[]>([])
 const loading = ref(true)
 
+// 公告弹窗相关
+const showAnnouncementModal = ref(false)
+const currentAnnouncementIndex = ref(0)
+const hideAnnouncements = ref(false)
+const currentAnnouncement = computed(() => announcements.value[currentAnnouncementIndex.value] || null)
+const hasMoreAnnouncements = computed(() => currentAnnouncementIndex.value < announcements.value.length - 1)
+const dismissedKey = 'announcement_dismissed_ids'
+
+function getDismissedIds(): Set<number> {
+  try {
+    const raw = localStorage.getItem(dismissedKey)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function saveDismissedIds(ids: Set<number>) {
+  localStorage.setItem(dismissedKey, JSON.stringify([...ids]))
+}
+
+function dismissCurrentAnnouncement() {
+  if (!currentAnnouncement.value) return
+  const dismissed = getDismissedIds()
+  dismissed.add(currentAnnouncement.value.id)
+  saveDismissedIds(dismissed)
+}
+
+function handleNextAnnouncement() {
+  if (hideAnnouncements.value) {
+    dismissCurrentAnnouncement()
+  }
+  if (hasMoreAnnouncements.value) {
+    currentAnnouncementIndex.value++
+    hideAnnouncements.value = false
+  } else {
+    showAnnouncementModal.value = false
+  }
+}
+
+watch(showAnnouncementModal, (val) => {
+  if (!val && hideAnnouncements.value) {
+    dismissCurrentAnnouncement()
+  }
+})
+
 onMounted(async () => {
   try {
     const [catRes, recRes, latestRes, annRes] = await Promise.allSettled([
@@ -49,7 +99,15 @@ onMounted(async () => {
     if (catRes.status === 'fulfilled') categories.value = catRes.value.data
     if (recRes.status === 'fulfilled') recommendGoods.value = recRes.value.data
     if (latestRes.status === 'fulfilled') latestGoods.value = latestRes.value.data
-    if (annRes.status === 'fulfilled') announcements.value = annRes.value.data
+    if (annRes.status === 'fulfilled') {
+      const dismissed = getDismissedIds()
+      const unread = (annRes.value.data as Announcement[]).filter(a => !dismissed.has(a.id))
+      if (unread.length > 0) {
+        announcements.value = unread
+        currentAnnouncementIndex.value = 0
+        showAnnouncementModal.value = true
+      }
+    }
   } finally {
     loading.value = false
   }
@@ -66,12 +124,6 @@ function goToGoods(id: number) {
 
 <template>
   <div class="space-y-6 pb-8">
-    <!-- Announcement Banner -->
-    <div v-if="announcements.length > 0" class="bg-[#FEF3C7] text-[#92400E] px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-      <span>📢</span>
-      <span v-for="ann in announcements.slice(0, 2)" :key="ann.id" class="mr-4">{{ ann.title }}</span>
-    </div>
-
     <!-- Banner Carousel -->
     <NCarousel autoplay :interval="4000" effect="slide" show-arrow class="rounded-xl overflow-hidden" style="height: 280px">
       <div v-for="banner in banners" :key="banner.id" class="relative h-full">
@@ -220,6 +272,43 @@ function goToGoods(id: number) {
         <NEmpty v-else-if="!loading" description="暂无最新商品" />
       </NSpin>
     </div>
+
+    <!-- Announcement Modal -->
+    <NModal
+      v-model:show="showAnnouncementModal"
+      :closable="true"
+      :mask-closable="true"
+      preset="card"
+      style="width: 480px; border-radius: 12px"
+    >
+      <template #header>
+        <div class="flex items-center gap-2">
+          <span class="text-lg">📢</span>
+          <span class="font-bold">平台公告</span>
+          <span v-if="announcements.length > 1" class="text-xs text-gray-400 ml-auto">
+            {{ currentAnnouncementIndex + 1 }} / {{ announcements.length }}
+          </span>
+        </div>
+      </template>
+
+      <div v-if="currentAnnouncement" class="space-y-4">
+        <h3 class="text-base font-semibold text-gray-800">{{ currentAnnouncement.title }}</h3>
+        <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{{ currentAnnouncement.content }}</p>
+        <p class="text-xs text-gray-400">{{ formatDate(currentAnnouncement.createTime) }}</p>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-between">
+          <NCheckbox v-model:checked="hideAnnouncements">不再弹出</NCheckbox>
+          <NButton
+            type="primary"
+            @click="handleNextAnnouncement"
+          >
+            {{ hasMoreAnnouncements ? '下一条' : '我知道了' }}
+          </NButton>
+        </div>
+      </template>
+    </NModal>
   </div>
 </template>
 

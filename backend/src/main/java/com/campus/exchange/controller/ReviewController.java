@@ -24,6 +24,16 @@ public class ReviewController {
         return Result.ok(reviewService.create(user.getId(), dto));
     }
 
+    @GetMapping("/{id}")
+    public Result<ReviewVO> getById(@PathVariable Long id) {
+        return Result.ok(reviewService.getById(id));
+    }
+
+    @GetMapping("/order/{orderId}")
+    public Result<List<ReviewVO>> getBothByOrderId(@PathVariable Long orderId) {
+        return Result.ok(reviewService.getBothByOrderId(orderId));
+    }
+
     @GetMapping("/user/{userId}")
     public Result<List<ReviewVO>> getUserReviews(@PathVariable Long userId,
                                                   @RequestParam(defaultValue = "1") int page,

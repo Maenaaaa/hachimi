@@ -6,6 +6,9 @@ import java.util.List;
 
 public interface ReviewService {
     ReviewVO create(Long reviewerId, CreateReviewDTO dto);
+    ReviewVO getById(Long reviewId);
+    ReviewVO getByOrderId(Long orderId);
     List<ReviewVO> getUserReviews(Long userId, int page, int size);
     List<ReviewVO> getMyReceivedReviews(Long userId, int page, int size);
+    List<ReviewVO> getBothByOrderId(Long orderId);
 }

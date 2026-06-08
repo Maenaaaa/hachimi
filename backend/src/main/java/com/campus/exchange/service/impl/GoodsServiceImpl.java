@@ -76,7 +76,9 @@ public class GoodsServiceImpl implements GoodsService {
         if (dto.getDescription() != null) goods.setDescription(dto.getDescription());
         if (dto.getCampus() != null) goods.setCampus(dto.getCampus());
         if (dto.getTradeType() != null) goods.setTradeType(dto.getTradeType());
-        if ("ACTIVE".equals(goods.getStatus())) goods.setStatus("PENDING_REVIEW");
+        if (!"PENDING_REVIEW".equals(goods.getStatus())) {
+            goods.setStatus("PENDING_REVIEW");
+        }
         goodsMapper.updateById(goods);
 
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
@@ -123,7 +125,7 @@ public class GoodsServiceImpl implements GoodsService {
     public GoodsDetailVO getDetail(Long goodsId, Long currentUserId) {
         Goods goods = goodsMapper.selectById(goodsId);
         if (goods == null || goods.getDeleted() == 1) throw new BusinessException(404, "商品不存在或已下架");
-        if (!"ACTIVE".equals(goods.getStatus()) &&
+        if (!"ACTIVE".equals(goods.getStatus()) && !"SOLD".equals(goods.getStatus()) &&
                 !goods.getUserId().equals(currentUserId)) throw new BusinessException(404, "商品不存在或已下架");
 
         User seller = userMapper.selectById(goods.getUserId());

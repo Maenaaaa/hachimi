@@ -41,3 +41,7 @@ export function updateGoods(id: number, data: Partial<GoodsPublishForm>) {
 export function deleteGoods(id: number) {
   return del<null>(`/goods/${id}`)
 }
+
+export function toggleGoodsStatus(id: number, status: string) {
+  return put<null>(`/goods/${id}/status`, { status })
+}

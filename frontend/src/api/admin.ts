@@ -43,7 +43,7 @@ export function handleReport(id: number, status: string, handleNote?: string) {
 }
 
 export function getAdminAnnouncements() {
-  return get<Announcement[]>('/admin/announcement')
+  return get<Announcement[]>('/announcement')
 }
 
 export function createAnnouncement(data: { title: string; content: string }) {
@@ -56,6 +56,18 @@ export function updateAnnouncement(id: number, data: { title?: string; content?:
 
 export function deleteAnnouncement(id: number) {
   return del<null>(`/admin/announcement/${id}`)
+}
+
+export function getAdminVerifications(params: { page: number; size: number; status?: string }) {
+  return get<PageResult<User>>('/admin/verifications', params as Record<string, unknown>)
+}
+
+export function approveVerification(id: number) {
+  return put<null>(`/admin/verification/${id}/approve`)
+}
+
+export function rejectVerification(id: number, reason?: string) {
+  return put<null>(`/admin/verification/${id}/reject`, { reason })
 }
 
 export function searchGoods(keyword: string) {

@@ -7,13 +7,11 @@ import {
   NCard,
   NButton,
   NIcon,
-  NTag,
   NSpin,
   NDataTable,
   NSpace,
   NModal,
   NInput,
-  NSelect,
   useMessage,
   useDialog,
   type DataTableColumn,
@@ -35,16 +33,21 @@ const formData = ref({
   id: 0,
 })
 
-const priorityOptions = [
-  { label: '低', value: 'low' },
-  { label: '普通', value: 'normal' },
-  { label: '高', value: 'high' },
-]
+function openCreate() {
+  isEditing.value = false
+  formData.value = { title: '', content: '', id: 0 }
+  showModal.value = true
+}
 
-const statusOptions = [
-  { label: '发布', value: 'published' },
-  { label: '草稿', value: 'draft' },
-]
+function openEdit(ann: Announcement) {
+  isEditing.value = true
+  formData.value = {
+    title: ann.title,
+    content: ann.content,
+    id: ann.id,
+  }
+  showModal.value = true
+}
 
 async function loadAnnouncements() {
   loading.value = true
@@ -56,24 +59,6 @@ async function loadAnnouncements() {
   } finally {
     loading.value = false
   }
-}
-
-function openCreate() {
-  isEditing.value = false
-  formData.value = { title: '', content: '', priority: 'normal', status: 'published', id: 0 }
-  showModal.value = true
-}
-
-function openEdit(ann: Announcement) {
-  isEditing.value = true
-  formData.value = {
-    title: ann.title,
-    content: ann.content,
-    priority: ann.priority,
-    status: ann.status,
-    id: ann.id,
-  }
-  showModal.value = true
 }
 
 async function handleSubmit() {
@@ -128,18 +113,6 @@ function handleDelete(id: number) {
   })
 }
 
-const priorityTag: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-  low: 'default',
-  normal: 'warning',
-  high: 'error',
-}
-
-const priorityLabel: Record<string, string> = {
-  low: '低',
-  normal: '普通',
-  high: '高',
-}
-
 const columns: DataTableColumn<Announcement>[] = [
   {
     title: '标题',
@@ -150,35 +123,15 @@ const columns: DataTableColumn<Announcement>[] = [
   {
     title: '内容',
     key: 'content',
-    width: 300,
+    width: 400,
     ellipsis: true,
   },
   {
-    title: '优先级',
-    key: 'priority',
-    width: 80,
-    render(row) {
-      return h(NTag, { type: priorityTag[row.priority] || 'default', size: 'small' }, {
-        default: () => priorityLabel[row.priority] || row.priority,
-      })
-    },
-  },
-  {
-    title: '状态',
-    key: 'status',
-    width: 80,
-    render(row) {
-      return h(NTag, { type: row.status === 'published' ? 'success' : 'default', size: 'small' }, {
-        default: () => row.status === 'published' ? '已发布' : '草稿',
-      })
-    },
-  },
-  {
     title: '创建时间',
-    key: 'createdAt',
-    width: 100,
+    key: 'createTime',
+    width: 120,
     render(row) {
-      return h('span', { class: 'text-xs text-gray-400' }, formatDate(row.createdAt))
+      return h('span', { class: 'text-xs text-gray-400' }, formatDate(row.createTime))
     },
   },
   {
@@ -250,20 +203,6 @@ onMounted(loadAnnouncements)
           :maxlength="2000"
           show-count
         />
-        <div class="flex gap-4">
-          <NSelect
-            v-model:value="formData.priority"
-            :options="priorityOptions"
-            placeholder="优先级"
-            style="width: 120px"
-          />
-          <NSelect
-            v-model:value="formData.status"
-            :options="statusOptions"
-            placeholder="状态"
-            style="width: 120px"
-          />
-        </div>
         <NButton type="primary" block :loading="submitting" @click="handleSubmit">
           {{ isEditing ? '更新' : '创建' }}
         </NButton>

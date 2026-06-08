@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNotifications, readNotification, readAllNotifications } from '@/api/notification'
 import { formatDate } from '@/utils'
+import { useAppStore } from '@/stores/app'
 import { NButton, NCard, NEmpty, NSpin, NTag, useMessage } from 'naive-ui'
 
 const router = useRouter()
 const message = useMessage()
+const appStore = useAppStore()
 const notifications = ref<any[]>([])
 const loading = ref(true)
 
@@ -23,16 +25,27 @@ async function load() {
 
 async function handleClick(n: any) {
   if (!n.isRead) {
-    try { await readNotification(n.id); n.isRead = true } catch { /* ignore */ }
+    try {
+      await readNotification(n.id)
+      n.isRead = true
+      appStore.setUnreadCount(Math.max(0, appStore.unreadCount - 1))
+    } catch { /* ignore */ }
   }
   if (n.relatedId) {
     if (n.type === 'ORDER') router.push('/my-orders')
+    else if (n.title === '收到新评价') router.push(`/review/${n.relatedId}`)
     else if (n.type === 'REVIEW') router.push(`/goods/${n.relatedId}`)
   }
 }
 
 async function handleMarkAll() {
-  try { await readAllNotifications(); notifications.value.forEach(n => n.isRead = true); message.success('已全部标为已读') } catch { message.error('操作失败') }
+  try {
+    await readAllNotifications()
+    const unreadNum = notifications.value.filter(n => !n.isRead).length
+    notifications.value.forEach(n => n.isRead = true)
+    appStore.setUnreadCount(0)
+    message.success('已全部标为已读')
+  } catch { message.error('操作失败') }
 }
 
 onMounted(load)

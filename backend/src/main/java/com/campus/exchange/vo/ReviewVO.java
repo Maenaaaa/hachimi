@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 public class ReviewVO {
     private Long id;
     private Long orderId;
+    private Long goodsId;
+    private String goodsTitle;
+    private String goodsCoverImage;
     private Long reviewerId;
     private String reviewerNickname;
     private String reviewerAvatar;

@@ -38,5 +38,10 @@ public class ChatController {
 
         messagingTemplate.convertAndSend(
                 "/topic/chat/" + dto.getConversationId(), messageVO);
+
+        if (messageVO.getReceiverId() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(messageVO.getReceiverId()), "/queue/messages", messageVO);
+        }
     }
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getAdminReports, handleReport } from '@/api/admin'
-import { formatDate, getImageUrl } from '@/utils'
-import { REPORT_STATUS } from '@/constants'
+import { formatDate } from '@/utils'
 import type { Report } from '@/types/entity'
 import {
   NCard,
@@ -21,6 +21,7 @@ import {
   type DataTableColumn,
 } from 'naive-ui'
 
+const router = useRouter()
 const message = useMessage()
 const dialog = useDialog()
 
@@ -34,14 +35,21 @@ const pageSize = ref(20)
 const showHandleModal = ref(false)
 const handleNote = ref('')
 const handleTargetId = ref<number | null>(null)
-const handleAction = ref<'resolve' | 'dismiss'>('resolve')
+const handleAction = ref<'APPROVED' | 'REJECTED'>('APPROVED')
 
 const statusOptions = [
   { label: '全部', value: '' },
-  { label: '待处理', value: 'pending' },
-  { label: '已处理', value: 'resolved' },
-  { label: '已驳回', value: 'dismissed' },
+  { label: '待处理', value: 'PENDING' },
+  { label: '已处理', value: 'APPROVED' },
+  { label: '已驳回', value: 'REJECTED' },
 ]
+
+const reasonLabels: Record<string, string> = {
+  FALSE_INFO: '虚假信息',
+  FRAUD: '欺诈行为',
+  AD: '广告内容',
+  VIOLATION: '违规内容',
+}
 
 async function loadReports() {
   loading.value = true
@@ -51,8 +59,8 @@ async function loadReports() {
       size: pageSize.value,
       status: statusFilter.value || undefined,
     })
-    reportList.value = res.data as unknown as any[]
-    total.value = (res.data as unknown as any[]).length
+    reportList.value = res.data as unknown as Report[]
+    total.value = (res.data as unknown as Report[]).length
   } catch {
     message.error('加载举报列表失败')
   } finally {
@@ -65,7 +73,7 @@ function handleSearch() {
   loadReports()
 }
 
-function openHandleModal(id: number, action: 'resolve' | 'dismiss') {
+function openHandleModal(id: number, action: 'APPROVED' | 'REJECTED') {
   handleTargetId.value = id
   handleAction.value = action
   handleNote.value = ''
@@ -75,9 +83,8 @@ function openHandleModal(id: number, action: 'resolve' | 'dismiss') {
 async function confirmHandle() {
   if (!handleTargetId.value) return
   try {
-    const status = handleAction.value === 'resolve' ? 'APPROVED' : 'REJECTED'
-    await handleReport(handleTargetId.value, status, handleNote.value)
-    message.success(handleAction.value === 'resolve' ? '已处理' : '已驳回')
+    await handleReport(handleTargetId.value, handleAction.value, handleNote.value)
+    message.success(handleAction.value === 'APPROVED' ? '已处理' : '已驳回')
     showHandleModal.value = false
     loadReports()
   } catch {
@@ -88,41 +95,42 @@ async function confirmHandle() {
 const columns: DataTableColumn<Report>[] = [
   {
     title: '举报人',
-    key: 'reporterId',
+    key: 'reporterNickname',
     width: 120,
     render(row) {
       return h('div', { class: 'flex items-center gap-2' }, [
         h(NAvatar, {
-          src: getImageUrl(row.reporter?.avatar),
           size: 24,
           round: true,
           style: { backgroundColor: '#3B82F6', fontSize: '12px' },
-        }, { default: () => row.reporter?.nickname?.charAt(0) || 'U' }),
-        h('span', { class: 'text-sm' }, row.reporter?.nickname),
+        }, { default: () => row.reporterNickname?.charAt(0) || 'U' }),
+        h('span', { class: 'text-sm' }, row.reporterNickname || '未知用户'),
       ])
     },
   },
   {
     title: '举报类型',
-    key: 'targetType',
+    key: 'type',
     width: 100,
     render(row) {
-      return h(NTag, { type: row.targetType === 'goods' ? 'info' : 'warning', size: 'small' }, {
-        default: () => row.targetType === 'goods' ? '商品' : '用户',
+      return h(NTag, { type: row.type === 'GOODS' ? 'info' : 'warning', size: 'small' }, {
+        default: () => row.type === 'GOODS' ? '商品' : '用户',
       })
     },
   },
   {
     title: '原因',
     key: 'reason',
-    width: 150,
-    ellipsis: true,
+    width: 120,
+    render(row) {
+      return reasonLabels[row.reason] || row.reason
+    },
   },
   {
     title: '描述',
     key: 'description',
     width: 200,
-    ellipsis: true,
+    ellipsis: { tooltip: true },
     render(row) {
       return row.description || '--'
     },
@@ -132,38 +140,50 @@ const columns: DataTableColumn<Report>[] = [
     key: 'status',
     width: 80,
     render(row) {
-      const typeMap: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-        pending: 'warning',
-        resolved: 'success',
-        dismissed: 'default',
+      const statusMap: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+        PENDING: 'warning',
+        APPROVED: 'success',
+        REJECTED: 'default',
       }
-      return h(NTag, { type: typeMap[row.status] || 'default', size: 'small' }, {
-        default: () => REPORT_STATUS[row.status] || row.status,
+      const labelMap: Record<string, string> = {
+        PENDING: '待处理',
+        APPROVED: '已处理',
+        REJECTED: '已驳回',
+      }
+      return h(NTag, { type: statusMap[row.status] || 'default', size: 'small' }, {
+        default: () => labelMap[row.status] || row.status,
       })
     },
   },
   {
     title: '时间',
-    key: 'createdAt',
-    width: 100,
+    key: 'createTime',
+    width: 110,
     render(row) {
-      return h('span', { class: 'text-xs text-gray-400' }, formatDate(row.createdAt))
+      return h('span', { class: 'text-xs text-gray-400' }, formatDate((row as any).createTime || (row as any).createTime))
     },
   },
   {
     title: '操作',
     key: 'actions',
-    width: 120,
+    width: 180,
     render(row) {
-      if (row.status === 'pending') {
-        return h(NSpace, null, {
-          default: () => [
-            h(NButton, { size: 'tiny', type: 'success' as const, onClick: () => openHandleModal(row.id, 'resolve') }, { default: () => '处理' }),
-            h(NButton, { size: 'tiny', onClick: () => openHandleModal(row.id, 'dismiss') }, { default: () => '驳回' }),
-          ],
-        })
+      const buttons = []
+      if (row.status === 'PENDING') {
+        buttons.push(
+          h(NButton, { size: 'tiny', type: 'success' as const, onClick: () => openHandleModal(row.id, 'APPROVED') }, { default: () => '处理' }),
+          h(NButton, { size: 'tiny', type: 'error' as const, onClick: () => openHandleModal(row.id, 'REJECTED') }, { default: () => '驳回' }),
+        )
       }
-      return h('span', { class: 'text-xs text-gray-400' }, row.handleNote || '--')
+      if (row.type === 'GOODS' && row.targetId) {
+        buttons.push(
+          h(NButton, { size: 'tiny', text: true, type: 'primary' as const, onClick: () => { window.open(`/goods/${row.targetId}`, '_blank') } }, { default: () => '查看商品' }),
+        )
+      }
+      if (buttons.length === 0) {
+        return h('span', { class: 'text-xs text-gray-400' }, row.handleNote || '--')
+      }
+      return h(NSpace, { size: 4 }, { default: () => buttons })
     },
   },
 ]
@@ -213,7 +233,7 @@ onMounted(loadReports)
     <!-- Handle Modal -->
     <NModal
       v-model:show="showHandleModal"
-      :title="handleAction === 'resolve' ? '处理举报' : '驳回举报'"
+      :title="handleAction === 'APPROVED' ? '处理举报' : '驳回举报'"
       preset="card"
       style="width: 400px; border-radius: 12px"
     >
@@ -221,15 +241,15 @@ onMounted(loadReports)
         <NInput
           v-model:value="handleNote"
           type="textarea"
-          :placeholder="`输入${handleAction === 'resolve' ? '处理' : '驳回'}备注（选填）`"
+          :placeholder="`输入${handleAction === 'APPROVED' ? '处理' : '驳回'}备注（选填）`"
           :rows="3"
         />
         <NButton
           block
-          :type="handleAction === 'resolve' ? 'success' : 'default'"
+          :type="handleAction === 'APPROVED' ? 'success' : 'error'"
           @click="confirmHandle"
         >
-          确认{{ handleAction === 'resolve' ? '处理' : '驳回' }}
+          确认{{ handleAction === 'APPROVED' ? '处理' : '驳回' }}
         </NButton>
       </div>
     </NModal>

@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { getUnreadCount } from '@/api/notification'
+import { getUnreadCount as getChatUnreadCount } from '@/api/chat'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { getToken } from '@/utils/request'
 import LoginModal from '@/components/LoginModal.vue'
@@ -31,6 +32,7 @@ import {
   Settings24Filled,
   WeatherMoon48Filled,
   WeatherSunny48Filled,
+  ShoppingBag24Filled,
 } from '@vicons/fluent'
 
 const router = useRouter()
@@ -41,6 +43,7 @@ const { subscribe, connect } = useWebSocket()
 
 const keyword = ref('')
 const unreadCount = ref(0)
+const chatUnreadCount = ref(0)
 const showMobileMenu = ref(false)
 
 function handleSearch() {
@@ -72,6 +75,7 @@ function handleLogout() {
 
 const userMenuOptions = [
   { label: '我的主页', key: 'profile', icon: () => h(Person24Filled) },
+  { label: '我的订单', key: 'my-orders', icon: () => h(ShoppingBag24Filled) },
   { label: '个人设置', key: 'settings', icon: () => h(Settings24Filled) },
   { type: 'divider' as const },
   { label: '退出登录', key: 'logout', icon: () => h(SignOut24Filled) },
@@ -81,6 +85,9 @@ function handleUserMenuSelect(key: string) {
   switch (key) {
     case 'profile':
       goToProfile()
+      break
+    case 'my-orders':
+      router.push('/my-orders')
       break
     case 'settings':
       goToSettings()
@@ -101,6 +108,15 @@ async function fetchUnreadCount() {
   }
 }
 
+async function fetchChatUnreadCount() {
+  try {
+    const res = await getChatUnreadCount()
+    chatUnreadCount.value = res.data
+  } catch {
+    // ignore
+  }
+}
+
 onMounted(async () => {
   if (getToken() && !userStore.user) {
     try {
@@ -111,9 +127,13 @@ onMounted(async () => {
   }
   if (userStore.isLoggedIn) {
     fetchUnreadCount()
+    fetchChatUnreadCount()
     connect()
     subscribe('/user/queue/notifications', () => {
       fetchUnreadCount()
+    })
+    subscribe('/user/queue/messages', () => {
+      fetchChatUnreadCount()
     })
   }
 })
@@ -123,7 +143,18 @@ watch(
   (val) => {
     if (val) {
       fetchUnreadCount()
+      fetchChatUnreadCount()
       connect()
+    }
+  },
+)
+
+watch(
+  () => route.path,
+  () => {
+    if (userStore.isLoggedIn) {
+      fetchUnreadCount()
+      fetchChatUnreadCount()
     }
   },
 )
@@ -180,11 +211,13 @@ watch(
               发布
             </NButton>
 
-            <NButton quaternary circle @click="goToChat">
-              <template #icon>
-                <NIcon size="22"><Chat24Filled /></NIcon>
-              </template>
-            </NButton>
+            <NBadge :value="chatUnreadCount" :max="99">
+              <NButton quaternary circle @click="goToChat">
+                <template #icon>
+                  <NIcon size="22"><Chat24Filled /></NIcon>
+                </template>
+              </NButton>
+            </NBadge>
 
             <NBadge :value="unreadCount" :max="99">
               <NButton quaternary circle @click="router.push('/notifications')">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getMyGoods, deleteGoods, updateGoods } from '@/api/goods'
+import { getMyGoods, deleteGoods, toggleGoodsStatus } from '@/api/goods'
 import { getImageUrl, formatPrice, formatDate } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import type { Goods } from '@/types/entity'
@@ -28,9 +28,6 @@ const dialog = useDialog()
 
 const goodsList = ref<Goods[]>([])
 const loading = ref(true)
-const showEditModal = ref(false)
-const editForm = ref({ title: '', price: 0, description: '' })
-const editingId = ref<number | null>(null)
 
 async function loadGoods() {
   loading.value = true
@@ -45,13 +42,11 @@ async function loadGoods() {
 }
 
 function handleEdit(goods: Goods) {
-  editingId.value = goods.id
-  editForm.value = {
-    title: goods.title,
-    price: goods.price,
-    description: goods.description,
-  }
-  showEditModal.value = true
+  router.push(`/goods/${goods.id}/edit`)
+}
+
+function goToGoods(id: number) {
+  router.push(`/goods/${id}`)
 }
 
 async function handleDelete(id: number) {
@@ -72,20 +67,22 @@ async function handleDelete(id: number) {
   })
 }
 
-async function saveEdit() {
-  if (!editingId.value) return
-  try {
-    await updateGoods(editingId.value, editForm.value)
-    message.success('修改成功')
-    showEditModal.value = false
-    loadGoods()
-  } catch {
-    message.error('修改失败')
-  }
-}
-
-function goToGoods(id: number) {
-  router.push(`/goods/${id}`)
+function handleRelist(id: number) {
+  dialog.info({
+    title: '重新上架',
+    content: '将重新提交审核，审核通过后商品将恢复上架',
+    positiveText: '确认上架',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await toggleGoodsStatus(id, 'PENDING_REVIEW')
+        message.success('已重新提交审核')
+        loadGoods()
+      } catch {
+        message.error('操作失败')
+      }
+    },
+  })
 }
 
 const columns: DataTableColumn<Goods>[] = [
@@ -95,7 +92,7 @@ const columns: DataTableColumn<Goods>[] = [
     width: 200,
     render(row) {
       return h('div', { class: 'flex items-center gap-3 cursor-pointer', onClick: () => goToGoods(row.id) }, [
-        h('img', { src: getImageUrl(row.images?.[0]), class: 'w-12 h-12 object-cover rounded-lg' }),
+        h('img', { src: getImageUrl(row.coverImage || row.images?.[0] || ''), class: 'w-12 h-12 object-cover rounded-lg', onerror: (e: Event) => { (e.target as HTMLImageElement).src = '' } }),
         h('span', { class: 'text-sm font-semibold truncate' }, row.title),
       ])
     },
@@ -114,11 +111,11 @@ const columns: DataTableColumn<Goods>[] = [
     width: 80,
     render(row) {
       const statusMap: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-        active: 'success',
-        inactive: 'default',
-        sold: 'warning',
-        pending: 'warning',
-        rejected: 'error',
+        ACTIVE: 'success',
+        INACTIVE: 'default',
+        PENDING_REVIEW: 'warning',
+        REJECTED: 'error',
+        TAKEN_DOWN: 'error',
       }
       return h(NTag, { type: statusMap[row.status] || 'default', size: 'small' }, { default: () => GOODS_STATUS[row.status] || row.status })
     },
@@ -133,35 +130,36 @@ const columns: DataTableColumn<Goods>[] = [
   },
   {
     title: '发布时间',
-    key: 'createdAt',
+    key: 'createTime',
     width: 100,
     render(row) {
-      return h('span', { class: 'text-xs text-gray-400' }, formatDate(row.createdAt))
+      return h('span', { class: 'text-xs text-gray-400' }, formatDate((row as any).createTime || (row as any).createdAt))
     },
   },
   {
     title: '操作',
     key: 'actions',
-    width: 140,
+    width: 220,
     render(row) {
-      return h(NSpace, null, {
-        default: () => [
-          h(NButton,
-            { size: 'tiny', quaternary: true, onClick: () => handleEdit(row) },
-            {
-              icon: () => h(NIcon, null, { default: () => h(Edit24Filled) }),
-              default: () => '编辑',
-            },
-          ),
-          h(NButton,
-            { size: 'tiny', quaternary: true, type: 'error' as const, onClick: () => handleDelete(row.id) },
-            {
-              icon: () => h(NIcon, null, { default: () => h(Delete24Filled) }),
-              default: () => '删除',
-            },
-          ),
-        ],
-      })
+      const buttons = []
+      buttons.push(
+        h(NButton, { size: 'tiny', quaternary: true, onClick: () => handleEdit(row) }, {
+          icon: () => h(NIcon, null, { default: () => h(Edit24Filled) }),
+          default: () => '编辑',
+        }),
+      )
+      if (row.status === 'TAKEN_DOWN' || row.status === 'INACTIVE') {
+        buttons.push(
+          h(NButton, { size: 'tiny', quaternary: true, type: 'success' as const, onClick: () => handleRelist(row.id) }, { default: () => '重新上架' }),
+        )
+      }
+      buttons.push(
+        h(NButton, { size: 'tiny', quaternary: true, type: 'error' as const, onClick: () => handleDelete(row.id) }, {
+          icon: () => h(NIcon, null, { default: () => h(Delete24Filled) }),
+          default: () => '删除',
+        }),
+      )
+      return h(NSpace, { size: 4 }, { default: () => buttons })
     },
   },
 ]
@@ -190,14 +188,5 @@ onMounted(loadGoods)
         <NEmpty v-else description="还没有发布商品" />
       </NSpin>
     </NCard>
-
-    <NModal v-model:show="showEditModal" title="编辑商品" preset="card" style="width: 500px; border-radius: 12px">
-      <div class="space-y-4">
-        <NInput v-model:value="editForm.title" placeholder="商品标题" />
-        <NInput :value="editForm.price ? String(editForm.price) : ''" placeholder="价格" :input-props="{ type: 'number', min: 0, step: 0.01 }" @update:value="(v: string) => { editForm.price = v ? Number(v) : 0 }" />
-        <NInput v-model:value="editForm.description" type="textarea" placeholder="描述" :rows="4" />
-        <NButton type="primary" block @click="saveEdit">保存修改</NButton>
-      </div>
-    </NModal>
   </div>
 </template>
