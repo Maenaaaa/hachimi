@@ -3,7 +3,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchGoods } from '@/api/goods'
 import { getCategories } from '@/api/category'
-import { formatPrice, formatDate, getAvatarUrl } from '@/utils'
+import { formatPrice, formatDate, getAvatarUrl, getImageUrl } from '@/utils'
 import type { Category } from '@/types/entity'
 import { GOODS_CONDITIONS } from '@/constants'
 import {
@@ -177,7 +177,7 @@ onMounted(() => {
               :style="{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,.06)' }"
               @click="goToGoods(goods.id)">
               <div class="relative">
-                <img :src="goods.coverImage || ''" :alt="goods.title"
+                <img :src="getImageUrl(goods.coverImage)" :alt="goods.title"
                   class="w-full h-36 object-cover rounded-lg" loading="lazy"
                   @error="(e: Event) => { (e.target as HTMLImageElement).src = '' }" />
                 <NTag v-if="goods.condition" size="tiny" class="absolute top-2 left-2"

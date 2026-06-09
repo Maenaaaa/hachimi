@@ -32,6 +32,7 @@ const loadingMsgs = ref(false)
 const msgContainer = ref<HTMLElement | null>(null)
 const imgInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
+const sending = ref(false)
 
 const activeConv = computed(() => conversations.value.find(c => c.id === activeConvId.value))
 
@@ -74,27 +75,24 @@ async function startChat() {
     const conv = res.data
     activeConvId.value = conv.id
     await loadConversations()
-    // auto-send goods card
-    const card = JSON.stringify({
-      type: 'card',
-      goodsId: conv.goodsId,
-      title: conv.goodsTitle,
-      coverImage: conv.goodsCoverImage,
-    })
-    send('/app/chat', JSON.stringify({
-      conversationId: conv.id,
-      content: card,
-      messageType: 'CARD',
-    }))
+
+    // Subscribe to WebSocket topic for this conversation
+    if (currentSub) currentSub.unsubscribe()
+    const sub = subscribe(`/topic/chat/${conv.id}`, onWsMessage)
+    if (sub) currentSub = { unsubscribe: () => sub.unsubscribe() }
+
     await loadMessages()
     router.replace({ query: {} })
   } catch { message.error('创建会话失败') }
 }
 
 function handleSend() {
+  if (sending.value) return
   const text = inputText.value.trim()
   if (!text || !activeConvId.value) return
+  sending.value = true
   _send(text, 'TEXT')
+  setTimeout(() => { sending.value = false }, 500)
 }
 
 function handleSendCard() {
@@ -230,6 +228,10 @@ watch(connected, (val) => { if (val) loadConversations() })
                     <span class="font-semibold text-sm truncate">{{ conv.otherUserNickname }}</span>
                     <span class="text-xs text-gray-400 shrink-0">{{ formatDate(conv.lastMessageTime) }}</span>
                   </div>
+                  <div v-if="conv.goodsTitle" class="flex items-center gap-1.5 mt-1">
+                    <NIcon :size="12" class="text-[#3B82F6] shrink-0"><Gift24Filled /></NIcon>
+                    <span class="text-xs text-[#3B82F6] truncate">{{ conv.goodsTitle }}</span>
+                  </div>
                   <p class="text-xs text-gray-400 truncate mt-1">{{ formatLastMessage(conv.lastMessage) }}</p>
                 </div>
               </div>
@@ -282,7 +284,7 @@ watch(connected, (val) => { if (val) loadConversations() })
                     <div v-if="isCard(msg) && parseCard(msg)" class="rounded-2xl overflow-hidden shadow-sm"
                       :class="msg.senderId === userStore.user?.id ? 'rounded-br-md' : 'rounded-bl-md'"
                       style="width: 220px; cursor: pointer" @click="router.push('/goods/' + parseCard(msg).goodsId)">
-                      <img :src="parseCard(msg).coverImage || ''" class="w-full h-32 object-cover" />
+                      <img :src="getImageUrl(parseCard(msg).coverImage) || ''" class="w-full h-32 object-cover" />
                       <div class="p-3 dark:bg-gray-700 bg-white">
                         <div class="text-xs text-gray-400">商品卡片</div>
                         <div class="text-sm font-semibold dark:text-gray-100 text-gray-800 mt-1 truncate">{{ parseCard(msg).title }}</div>
@@ -290,7 +292,7 @@ watch(connected, (val) => { if (val) loadConversations() })
                       </div>
                     </div>
                     <!-- Image message -->
-                    <NImage v-else-if="isImage(msg)" :src="msg.content"
+                    <NImage v-else-if="isImage(msg)" :src="getImageUrl(msg.content)"
                       width="280" class="rounded-2xl shadow-sm cursor-pointer"
                       :class="msg.senderId === userStore.user?.id ? 'rounded-br-md' : 'rounded-bl-md'"
                       :preview-disabled="false"

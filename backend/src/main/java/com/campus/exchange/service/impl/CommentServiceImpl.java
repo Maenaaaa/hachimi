@@ -50,12 +50,12 @@ public class CommentServiceImpl implements CommentService {
             GoodsComment parent = commentMapper.selectById(dto.getParentId());
             if (parent != null && !parent.getUserId().equals(userId)) {
                 notificationService.create(parent.getUserId(), "SYSTEM",
-                        "留言被回复", (commenter != null ? commenter.getNickname() : "用户") + "回复了你的留言", comment.getId());
+                        "留言被回复", (commenter != null ? commenter.getNickname() : "用户") + "回复了你的留言", goods.getId());
             }
         } else {
             if (!goods.getUserId().equals(userId)) {
                 notificationService.create(goods.getUserId(), "SYSTEM",
-                        "商品有新留言", (commenter != null ? commenter.getNickname() : "用户") + "在你的商品下留言了", comment.getId());
+                        "商品有新留言", (commenter != null ? commenter.getNickname() : "用户") + "在你的商品下留言了", goods.getId());
             }
         }
 

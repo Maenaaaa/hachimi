@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { getBuyerOrders, getSellerOrders, confirmOrder, cancelOrder, completeOrder } from '@/api/order'
 import { createReview } from '@/api/review'
 import { useUserStore } from '@/stores/user'
-import { formatPrice, formatDate, getAvatarUrl } from '@/utils'
+import { formatPrice, formatDate, getAvatarUrl, getImageUrl } from '@/utils'
 import {
   NCard, NButton, NTag, NEmpty, NSpin, NTabPane, NTabs, NSpace,
   NModal, NInput, NRate, useMessage, useDialog,
@@ -159,7 +159,7 @@ onMounted(loadOrders)
           <div v-for="order in currentOrders" :key="order.id">
             <NCard :bordered="true" style="border-radius: 12px" class="cursor-pointer hover:shadow-md transition-shadow" @click="goToOrder(order.id)">
               <div class="flex items-start gap-4">
-                <img :src="order.goodsCoverImage || ''" class="w-20 h-20 object-cover rounded-lg"
+                <img :src="getImageUrl(order.goodsCoverImage)" class="w-20 h-20 object-cover rounded-lg"
                   @click.stop="goToGoods(order.goodsId)" />
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between flex-wrap gap-2">
@@ -174,7 +174,7 @@ onMounted(loadOrders)
                     <template v-else>{{ formatPrice(order.amount) }}</template>
                   </div>
                   <div v-if="order.goodsTradeType === 'EXCHANGE' && order.exchangeGoodsId" class="flex items-center gap-2 mt-2 p-2 bg-green-50 rounded-lg">
-                    <img :src="order.exchangeGoodsCoverImage || ''" class="w-10 h-10 object-cover rounded shrink-0" />
+                    <img :src="getImageUrl(order.exchangeGoodsCoverImage)" class="w-10 h-10 object-cover rounded shrink-0" />
                     <span class="text-xs text-gray-600">⇄ 置换商品：{{ order.exchangeGoodsTitle }}</span>
                   </div>
                   <div v-if="order.meetTime || order.meetPlace" class="text-xs text-gray-500 mt-1">

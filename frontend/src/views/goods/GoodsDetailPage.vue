@@ -7,10 +7,11 @@ import { addFollow, removeFollow } from '@/api/follow'
 import { createOrder } from '@/api/order'
 import { getComments, createComment } from '@/api/comment'
 import { createReport } from '@/api/report'
+import { getAiJudgmentBySource, getAiJudgmentsByGoodsId, appealAiJudgment } from '@/api/ai-judgment'
 import { getImageUrl, getAvatarUrl, formatPrice, formatDate } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import { GOODS_CONDITIONS, GOODS_STATUS } from '@/constants'
-import type { Goods, Review } from '@/types/entity'
+import type { Goods, Review, AiJudgmentRecord } from '@/types/entity'
 import {
   NButton,
   NCard,
@@ -74,6 +75,21 @@ const reportReason = ref('')
 const reportDescription = ref('')
 const submittingReport = ref(false)
 
+// 上诉相关状态
+const showAppealModal = ref(false)
+const appealReason = ref('')
+const submittingAppeal = ref(false)
+const aiJudgment = ref<AiJudgmentRecord | null>(null)
+const reportAiJudgment = ref<AiJudgmentRecord | null>(null)
+const canAppeal = computed(() => {
+  // 商品审核被拒可以申诉
+  if (aiJudgment.value?.status === 'PROCESSED' && goods.value?.status === 'REJECTED') return true
+  // 举报下架可以申诉
+  if (reportAiJudgment.value?.status === 'PROCESSED' && goods.value?.status === 'TAKEN_DOWN') return true
+  return false
+})
+const currentAppealJudgment = computed(() => aiJudgment.value?.status === 'PROCESSED' ? aiJudgment.value : reportAiJudgment.value)
+
 const goodsId = computed(() => Number(route.params.id))
 
 const isOwner = computed(() => goods.value?.userId === userStore.user?.id)
@@ -92,6 +108,7 @@ async function fetchData() {
         comments.value = commentRes.data || []
       } catch { /* ignore */ }
     }
+    loadAiJudgment()
   } catch {
     error.value = '商品不存在或已下架'
   } finally {
@@ -214,6 +231,7 @@ async function submitOrder() {
 }
 
 async function handleSubmitComment() {
+  if (submittingComment.value) return
   const text = commentText.value.trim()
   if (!text) return
   submittingComment.value = true
@@ -277,6 +295,43 @@ function handleDeleteGoods() {
       }
     },
   })
+}
+
+async function loadAiJudgment() {
+  if (!goodsId.value) return
+  try {
+    const res = await getAiJudgmentsByGoodsId(goodsId.value)
+    aiJudgment.value = res.data.goodsReview?.id ? res.data.goodsReview : null
+    reportAiJudgment.value = res.data.report?.id ? res.data.report : null
+  } catch {
+    aiJudgment.value = null
+    reportAiJudgment.value = null
+  }
+}
+
+function openAppealModal() {
+  appealReason.value = ''
+  showAppealModal.value = true
+}
+
+async function submitAppeal() {
+  if (!appealReason.value.trim()) {
+    message.warning('请填写申诉理由')
+    return
+  }
+  if (!currentAppealJudgment.value) return
+  
+  submittingAppeal.value = true
+  try {
+    await appealAiJudgment(currentAppealJudgment.value.id, appealReason.value)
+    message.success('申诉已提交，等待管理员审核')
+    showAppealModal.value = false
+    loadAiJudgment()
+  } catch (err: any) {
+    message.error(err.message || '申诉失败')
+  } finally {
+    submittingAppeal.value = false
+  }
 }
 
 async function submitReport() {
@@ -353,7 +408,7 @@ onMounted(fetchData)
                       color: goods.status === 'active' ? '#10B981' : '#EF4444',
                     }"
                   >
-                    {{ goods.status === 'ACTIVE' ? '在售' : goods.status === 'PENDING_REVIEW' ? '审核中' : goods.status === 'INACTIVE' ? '已下架' : goods.status === 'REJECTED' ? '未通过' : goods.status === 'TAKEN_DOWN' ? '强制下架' : goods.status }}
+                    {{ goods.status === 'ACTIVE' ? '在售' : goods.status === 'PENDING_REVIEW' ? '审核中' : goods.status === 'INACTIVE' ? '已下架' : goods.status === 'REJECTED' ? '未通过' : goods.status === 'TAKEN_DOWN' ? '强制下架' : goods.status === 'FINAL_REJECTED' ? '终审驳回' : goods.status }}
                   </NTag>
                   <NTag v-if="goods.categoryName" size="small">{{ goods.categoryName }}</NTag>
                   <NTag size="small">{{ GOODS_CONDITIONS[goods.condition] || goods.condition }}</NTag>
@@ -428,19 +483,23 @@ onMounted(fetchData)
                   >{{ GOODS_STATUS[goods.status] || goods.status }}</NTag>
                 </div>
                 <div class="flex gap-2">
-                  <NButton type="primary" size="small" @click="router.push(`/goods/${goodsId}/edit`)">
+                  <NButton
+                    v-if="goods.status !== 'FINAL_REJECTED'"
+                    type="primary"
+                    size="small"
+                    @click="router.push(`/goods/${goodsId}/edit`)"
+                  >
                     编辑商品
                   </NButton>
                   <NButton
-                    v-if="goods.status === 'TAKEN_DOWN' || goods.status === 'INACTIVE'"
-                    type="success"
+                    v-if="canAppeal && goods.status !== 'FINAL_REJECTED'"
+                    type="warning"
                     size="small"
-                    @click="handleRelist"
+                    @click="openAppealModal"
                   >
-                    重新上架
+                    申诉
                   </NButton>
                   <NButton
-                    v-if="goods.status === 'TAKEN_DOWN' || goods.status === 'INACTIVE'"
                     type="error"
                     size="small"
                     quaternary
@@ -570,7 +629,7 @@ onMounted(fetchData)
               class="flex items-center gap-3 p-2 rounded-lg cursor-pointer border"
               :class="exchangeOfferId === g.id ? 'border-[#3B82F6] bg-blue-50' : 'border-gray-100 hover:bg-gray-50'"
               @click="exchangeOfferId = exchangeOfferId === g.id ? null : g.id">
-              <img :src="g.coverImage || ''" class="w-12 h-12 object-cover rounded-lg shrink-0" />
+              <img :src="getImageUrl(g.coverImage)" class="w-12 h-12 object-cover rounded-lg shrink-0" />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-semibold truncate">{{ g.title }}</div>
                 <div v-if="g.tradeType !== 'EXCHANGE'" class="text-xs text-[#3B82F6] font-bold">{{ formatPrice(g.price || 0) }}</div>
@@ -617,6 +676,25 @@ onMounted(fetchData)
         <div class="flex gap-2">
           <NButton @click="showReportModal = false" class="flex-1">取消</NButton>
           <NButton type="error" :loading="submittingReport" @click="submitReport" class="flex-1">提交举报</NButton>
+        </div>
+      </div>
+    </NModal>
+
+    <!-- 上诉弹窗 -->
+    <NModal v-model:show="showAppealModal" preset="card" title="申诉" style="width: 420px; border-radius: 12px">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500">您可以通过申诉申请管理员重新审核该判决。</p>
+        <NInput
+          v-model:value="appealReason"
+          type="textarea"
+          placeholder="请填写申诉理由..."
+          :rows="4"
+          :maxlength="500"
+          show-count
+        />
+        <div class="flex gap-2">
+          <NButton @click="showAppealModal = false" class="flex-1">取消</NButton>
+          <NButton type="primary" :loading="submittingAppeal" @click="submitAppeal" class="flex-1">提交申诉</NButton>
         </div>
       </div>
     </NModal>

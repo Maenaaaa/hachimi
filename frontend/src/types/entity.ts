@@ -100,6 +100,7 @@ export interface Review {
   reviewerId: number
   reviewerNickname: string
   reviewerAvatar: string
+  reviewerRole?: 'BUYER' | 'SELLER'
   rating: number
   content: string
   createTime: string
@@ -237,4 +238,23 @@ export interface PasswordForm {
   oldPassword: string
   newPassword: string
   confirmPassword: string
+}
+
+/** AI判决记录 */
+export interface AiJudgmentRecord {
+  id: number
+  sourceType: string
+  sourceId: number
+  aiModel: string
+  confidence: number
+  verdict: string
+  reasoning: string | null
+  evidence: string | null
+  autoHandled: boolean
+  handlerId: number | null
+  handleNote: string | null
+  appealReason: string | null
+  status: string
+  createTime: string
+  updateTime: string
 }

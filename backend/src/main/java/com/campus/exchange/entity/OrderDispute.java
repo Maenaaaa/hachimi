@@ -16,6 +16,9 @@ public class OrderDispute {
     private Long handlerId;
     private String handleNote;
     private LocalDateTime handleTime;
+    private Long aiJudgmentId;
+    private Boolean aiAutoHandled;
+    private String selectedChatMessageIds;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

@@ -18,4 +18,5 @@ public class DisputeVO {
     private String handleNote;
     private LocalDateTime handleTime;
     private LocalDateTime createTime;
+    private String selectedChatMessageIds;
 }

@@ -8,6 +8,7 @@ import com.campus.exchange.entity.*;
 import com.campus.exchange.mapper.ReviewMapper;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
+import com.campus.exchange.service.MessageService;
 import com.campus.exchange.service.NotificationService;
 import com.campus.exchange.service.CreditScoreService;
 import com.campus.exchange.service.OrderService;
@@ -33,6 +34,8 @@ public class OrderServiceImpl implements OrderService {
     private final ReviewMapper reviewMapper;
     private final CreditScoreService creditScoreService;
     private final NotificationService notificationService;
+    private final ConversationMapper conversationMapper;
+    private final MessageService messageService;
 
     @Override
     @Transactional
@@ -67,6 +70,29 @@ public class OrderServiceImpl implements OrderService {
         addLog(order.getId(), "CREATE", buyerId, isExchange ? "买家发起置换" : "买家创建订单");
         notificationService.create(goods.getUserId(), "ORDER", "您有新的订单待确认",
                 "买家已下单购买「" + goods.getTitle() + "」", order.getId());
+
+        // 向卖家发送私信：商品卡片 + 我已下单
+        try {
+            Conversation conversation = conversationMapper.selectOne(
+                    new LambdaQueryWrapper<Conversation>()
+                            .eq(Conversation::getGoodsId, goods.getId())
+                            .eq(Conversation::getBuyerId, buyerId)
+                            .eq(Conversation::getDeleted, 0));
+            if (conversation == null) {
+                conversation = new Conversation();
+                conversation.setGoodsId(goods.getId());
+                conversation.setBuyerId(buyerId);
+                conversation.setSellerId(goods.getUserId());
+                conversationMapper.insert(conversation);
+            }
+            String card = "{\"type\":\"card\",\"goodsId\":" + goods.getId()
+                    + ",\"title\":\"" + goods.getTitle().replace("\"", "\\\"") + "\""
+                    + ",\"coverImage\":\"" + getFirstImage(goods.getId()) + "\"}";
+            messageService.sendMessage(conversation.getId(), buyerId, card, "CARD");
+            messageService.sendMessage(conversation.getId(), buyerId, "我已下单，请尽快确认", "TEXT");
+        } catch (Exception e) {
+            log.warn("发送下单私信失败: orderId={}, goodsId={}", order.getId(), goods.getId());
+        }
 
         return toOrderVO(order);
     }

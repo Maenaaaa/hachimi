@@ -20,7 +20,6 @@ import {
   NPopover,
   NIcon,
   NInput,
-  NDropdown,
   NMessageProvider,
 } from 'naive-ui'
 import {
@@ -50,6 +49,7 @@ const keyword = ref('')
 const unreadCount = ref(0)
 const chatUnreadCount = ref(0)
 const showMobileMenu = ref(false)
+const showUserMenu = ref(false)
 
 function handleSearch() {
   if (keyword.value.trim()) {
@@ -86,7 +86,8 @@ const userMenuOptions = [
   { label: '退出登录', key: 'logout', icon: () => h(SignOut24Filled) },
 ]
 
-function handleUserMenuSelect(key: string) {
+function handleMenuClick(key: string) {
+  showUserMenu.value = false
   switch (key) {
     case 'profile':
       goToProfile()
@@ -254,12 +255,46 @@ watch(
               </NButton>
             </NBadge>
 
-            <NDropdown trigger="click" :options="userMenuOptions" @select="handleUserMenuSelect">
-              <img 
-                :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
-                class="w-9 h-9 rounded-full object-cover cursor-pointer border-2 border-gray-100 dark:border-gray-700"
-              />
-            </NDropdown>
+            <NPopover trigger="click" placement="bottom-end" :show="showUserMenu" @update:show="showUserMenu = $event">
+              <template #trigger>
+                <div class="avatar-wrapper" @click="showUserMenu = !showUserMenu">
+                  <img 
+                    :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
+                    class="avatar-img"
+                  />
+                </div>
+              </template>
+              <div class="user-menu">
+                <div class="user-info">
+                  <img 
+                    :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
+                    class="user-avatar"
+                  />
+                  <div class="user-details">
+                    <div class="user-nickname">{{ userStore.user?.nickname || '用户' }}</div>
+                    <div class="user-id">@{{ userStore.user?.username || 'user' }}</div>
+                  </div>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" @click="handleMenuClick('profile')">
+                  <NIcon :size="18"><Person24Filled /></NIcon>
+                  <span>我的主页</span>
+                </div>
+                <div class="menu-item" @click="handleMenuClick('my-orders')">
+                  <NIcon :size="18"><ShoppingBag24Filled /></NIcon>
+                  <span>我的订单</span>
+                </div>
+                <div class="menu-item" @click="handleMenuClick('settings')">
+                  <NIcon :size="18"><Settings24Filled /></NIcon>
+                  <span>个人设置</span>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item logout" @click="handleMenuClick('logout')">
+                  <NIcon :size="18"><SignOut24Filled /></NIcon>
+                  <span>退出登录</span>
+                </div>
+              </div>
+            </NPopover>
           </template>
 
           <template v-else>
@@ -299,5 +334,174 @@ watch(
 .logo-icon:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+/* User Menu Styles */
+.avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.avatar-wrapper:hover {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.avatar-wrapper:hover .avatar-img {
+  border-color: #3B82F6;
+}
+
+.user-menu {
+  width: 220px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  margin: 0;
+  border: none;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-nickname {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-id {
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 6px 8px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.menu-item:active {
+  transform: scale(0.98);
+}
+
+.menu-item.logout {
+  color: #ef4444;
+}
+
+.menu-item.logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* Override NPopover default styles */
+:deep(.n-popover) {
+  border: none !important;
+  box-shadow: none !important;
+}
+</style>
+
+<style>
+/* Dark mode styles - unscoped to work with NPopover */
+html.dark .avatar-img {
+  border-color: #374151;
+}
+
+html.dark .user-menu {
+  background: #1f2937;
+}
+
+html.dark .user-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%);
+}
+
+html.dark .user-avatar {
+  border-color: #374151;
+}
+
+html.dark .user-nickname {
+  color: #f3f4f6;
+}
+
+html.dark .user-id {
+  color: #9ca3af;
+}
+
+html.dark .menu-divider {
+  background: #374151;
+}
+
+html.dark .menu-item {
+  color: #d1d5db;
+}
+
+html.dark .menu-item:hover {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+html.dark .menu-item.logout {
+  color: #f87171;
+}
+
+html.dark .menu-item.logout:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #ef4444;
 }
 </style>

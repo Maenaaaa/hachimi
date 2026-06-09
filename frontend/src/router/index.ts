@@ -56,6 +56,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'verifications', name: 'AdminVerifications', component: () => import('@/views/admin/VerificationManagementPage.vue') },
       { path: 'disputes', name: 'AdminDisputes', component: () => import('@/views/admin/DisputeManagementPage.vue') },
       { path: 'announcements', name: 'AdminAnnouncements', component: () => import('@/views/admin/AnnouncementManagementPage.vue') },
+      { path: 'ai-judgments', name: 'AdminAiJudgments', component: () => import('@/views/admin/AiJudgmentPage.vue') },
+      { path: 'ai-config', name: 'AdminAiConfig', component: () => import('@/views/admin/AiConfigPage.vue') },
     ],
   },
   {

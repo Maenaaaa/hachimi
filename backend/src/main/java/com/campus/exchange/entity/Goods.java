@@ -21,6 +21,9 @@ public class Goods {
     private Long categoryId;
     private Long userId;
     private String status;
+    private String aiReviewStatus;
+    private Double aiReviewConfidence;
+    private String aiReviewNote;
     private Integer viewCount;
     private Integer favoriteCount;
     @TableField(fill = FieldFill.INSERT)

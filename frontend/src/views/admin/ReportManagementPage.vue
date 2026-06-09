@@ -59,8 +59,9 @@ async function loadReports() {
       size: pageSize.value,
       status: statusFilter.value || undefined,
     })
-    reportList.value = res.data as unknown as Report[]
-    total.value = (res.data as unknown as Report[]).length
+    const pageData = res.data as unknown as { records: Report[]; total: number }
+    reportList.value = pageData?.records || []
+    total.value = pageData?.total || 0
   } catch {
     message.error('加载举报列表失败')
   } finally {

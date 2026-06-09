@@ -21,6 +21,9 @@ build/
 .env.local
 .env.*.local
 
+# Secret config (contains API keys, passwords)
+application-secret.yml
+
 # Logs
 logs/
 *.log

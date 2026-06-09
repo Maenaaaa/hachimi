@@ -78,6 +78,14 @@ async function loadGoods() {
     ])
     categories.value = catRes.data
     const g = goodsRes.data
+    
+    // 终审驳回的商品不能编辑
+    if (g.status === 'FINAL_REJECTED') {
+      message.error('该商品已被终审驳回，无法编辑')
+      router.back()
+      return
+    }
+    
     formData.value.title = g.title
     formData.value.description = g.description || ''
     formData.value.price = g.price

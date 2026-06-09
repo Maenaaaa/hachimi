@@ -17,6 +17,7 @@ export const GOODS_STATUS: Record<string, string> = {
   REJECTED: '未通过',
   TAKEN_DOWN: '强制下架',
   SOLD: '已出售',
+  FINAL_REJECTED: '终审驳回',
 }
 
 export const ORDER_STATUS: Record<string, string> = {

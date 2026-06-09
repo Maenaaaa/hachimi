@@ -3,18 +3,21 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getOrderDetail, confirmOrder, cancelOrder, completeOrder, requestCancelOrder, approveCancelOrder, rejectCancelOrder, createDispute } from '@/api/order'
 import { getReviewByOrderId, createReview } from '@/api/review'
+import { getAiJudgmentBySource, appealAiJudgment } from '@/api/ai-judgment'
 import { getImageUrl, getAvatarUrl, formatPrice, formatDate, formatDateTime } from '@/utils'
 import { useUserStore } from '@/stores/user'
 import { ORDER_STATUS } from '@/constants'
+import type { AiJudgmentRecord } from '@/types/entity'
 import {
   NCard, NSpin, NButton, NTag, NAvatar, NIcon, NDivider, NTimeline, NTimelineItem,
-  NInput, NModal, NRate, NEmpty,
+  NInput, NModal, NRate, NEmpty, NCheckbox, NCheckboxGroup, NScrollbar,
   useMessage, useDialog,
 } from 'naive-ui'
 import {
   ArrowLeft24Filled, CheckmarkCircle24Filled, DismissCircle24Filled,
   Clock24Filled, Cart24Filled,
 } from '@vicons/fluent'
+import { getConversationList, getMessages } from '@/api/chat'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +48,11 @@ const statusConfig = computed(() => {
   return map[s] || { color: '#999', label: s, icon: Clock24Filled }
 })
 
+// 聊天记录相关状态
+const chatMessages = ref<any[]>([])
+const selectedChatMessageIds = ref<number[]>([])
+const loadingChat = ref(false)
+
 async function loadOrder() {
   loading.value = true
   try {
@@ -72,6 +80,7 @@ async function loadReviews() {
 }
 
 async function handleSubmitReview() {
+  if (submittingReview.value) return
   submittingReview.value = true
   try {
     await createReview({ orderId: orderId.value, rating: reviewRating.value, content: reviewContent.value })
@@ -154,16 +163,63 @@ const reviewRating = ref(5)
 const reviewContent = ref('')
 const submittingReview = ref(false)
 
+// 上诉相关状态
+const showAppealModal = ref(false)
+const appealReason = ref('')
+const submittingAppeal = ref(false)
+const disputeAiJudgment = ref<AiJudgmentRecord | null>(null)
+const canAppealDispute = computed(() => {
+  if (!disputeAiJudgment.value) return false
+  return disputeAiJudgment.value.status === 'PROCESSED' && order.value?.status === 'IN_PROGRESS'
+})
+
 function openCancelModal() {
   modalType.value = 'cancel'
   modalReason.value = ''
   showModal.value = true
 }
 
-function openDisputeModal() {
+async function openDisputeModal() {
   modalType.value = 'dispute'
   modalReason.value = ''
+  selectedChatMessageIds.value = []
   showModal.value = true
+  
+  // 加载聊天记录
+  await loadChatMessages()
+}
+
+async function loadChatMessages() {
+  if (!order.value?.goodsId) return
+  
+  loadingChat.value = true
+  try {
+    // 获取与该商品相关的会话
+    const conversationsRes = await getConversationList()
+    const conversations = conversationsRes.data || []
+    
+    // 找到与当前订单商品相关的会话（通过goodsId匹配）
+    const relevantConversation = conversations.find((conv: any) => 
+      conv.goodsId === order.value.goodsId
+    )
+    
+    if (relevantConversation) {
+      // 获取该会话的聊天记录
+      const messagesRes = await getMessages(relevantConversation.id, 1, 100)
+      chatMessages.value = (messagesRes.data || []).map((msg: any) => ({
+        ...msg,
+        senderName: msg.senderId === order.value.buyerId ? order.value.buyerNickname : order.value.sellerNickname,
+        isMe: msg.senderId === userStore.user?.id
+      }))
+    } else {
+      chatMessages.value = []
+    }
+  } catch (err) {
+    console.error('加载聊天记录失败', err)
+    chatMessages.value = []
+  } finally {
+    loadingChat.value = false
+  }
 }
 
 async function handleRequestCancel() {
@@ -218,7 +274,7 @@ async function handleCreateDispute() {
   if (!modalReason.value.trim()) { message.warning('请填写申请原因'); return }
   actionLoading.value = true
   try {
-    await createDispute(orderId.value, modalReason.value)
+    await createDispute(orderId.value, modalReason.value, selectedChatMessageIds.value.length > 0 ? selectedChatMessageIds.value : undefined)
     message.success('已申请仲裁')
     showModal.value = false
     loadOrder()
@@ -226,7 +282,45 @@ async function handleCreateDispute() {
   finally { actionLoading.value = false }
 }
 
-onMounted(loadOrder)
+async function loadDisputeAiJudgment() {
+  if (!orderId.value) return
+  try {
+    const res = await getAiJudgmentBySource('DISPUTE', orderId.value)
+    disputeAiJudgment.value = res.data
+  } catch {
+    disputeAiJudgment.value = null
+  }
+}
+
+function openAppealModal() {
+  appealReason.value = ''
+  showAppealModal.value = true
+}
+
+async function submitAppeal() {
+  if (!appealReason.value.trim()) {
+    message.warning('请填写申诉理由')
+    return
+  }
+  if (!disputeAiJudgment.value) return
+  
+  submittingAppeal.value = true
+  try {
+    await appealAiJudgment(disputeAiJudgment.value.id, appealReason.value)
+    message.success('申诉已提交，等待管理员审核')
+    showAppealModal.value = false
+    loadDisputeAiJudgment()
+  } catch (err: any) {
+    message.error(err.message || '申诉失败')
+  } finally {
+    submittingAppeal.value = false
+  }
+}
+
+onMounted(() => {
+  loadOrder()
+  loadDisputeAiJudgment()
+})
 </script>
 
 <template>
@@ -421,6 +515,10 @@ onMounted(loadOrder)
             <template v-if="order.status === 'DISPUTED'">
               <NButton block disabled>等待管理员仲裁</NButton>
             </template>
+            <!-- Appeal button for rejected dispute -->
+            <NButton v-if="canAppealDispute" type="warning" block quaternary @click="openAppealModal">
+              申诉
+            </NButton>
           </div>
         </NCard>
 
@@ -481,9 +579,60 @@ onMounted(loadOrder)
       <div class="space-y-4">
         <p class="text-sm text-gray-500">{{ modalType === 'cancel' ? '请填写取消原因，提交后等待买家处理' : '请填写仲裁原因，提交后由管理员审核' }}</p>
         <NInput v-model:value="modalReason" type="textarea" :placeholder="modalType === 'cancel' ? '请输入取消原因...' : '请输入仲裁原因...'" :rows="4" :maxlength="500" show-count />
+        
+        <!-- 聊天记录选择（仅仲裁时显示） -->
+        <div v-if="modalType === 'dispute'" class="space-y-3">
+          <div class="text-sm font-medium text-gray-700">选择聊天记录（可选）</div>
+          <p class="text-xs text-gray-400">选择与争议相关的聊天记录，将提供给AI仲裁员参考</p>
+          
+          <NSpin :show="loadingChat" size="small">
+            <div v-if="chatMessages.length > 0" class="border border-gray-200 rounded-lg overflow-hidden">
+              <NScrollbar style="max-height: 200px">
+                <NCheckboxGroup v-model:value="selectedChatMessageIds">
+                  <div class="p-2 space-y-2">
+                    <div v-for="msg in chatMessages" :key="msg.id" class="flex items-start gap-2">
+                      <NCheckbox :value="msg.id" :label="''" class="mt-0.5" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1">
+                          <span class="text-xs font-medium" :class="msg.isMe ? 'text-blue-500' : 'text-green-500'">
+                            {{ msg.senderName }}
+                          </span>
+                          <span class="text-xs text-gray-400">{{ formatDateTime(msg.createTime) }}</span>
+                        </div>
+                        <div class="text-sm text-gray-700 truncate">{{ msg.content }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </NCheckboxGroup>
+              </NScrollbar>
+            </div>
+            <NEmpty v-else description="暂无聊天记录" class="py-4" />
+          </NSpin>
+          
+          <div v-if="selectedChatMessageIds.length > 0" class="text-xs text-blue-500">
+            已选择 {{ selectedChatMessageIds.length }} 条聊天记录
+          </div>
+        </div>
+        
         <NButton type="primary" block :loading="actionLoading" @click="modalType === 'cancel' ? handleRequestCancel() : handleCreateDispute()">
           提交{{ modalType === 'cancel' ? '取消申请' : '仲裁申请' }}
         </NButton>
+      </div>
+    </NModal>
+
+    <!-- 上诉弹窗 -->
+    <NModal v-model:show="showAppealModal" preset="card" title="申诉" style="width: 420px; border-radius: 12px">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500">您可以通过申诉申请管理员重新审核该仲裁判决。</p>
+        <NInput
+          v-model:value="appealReason"
+          type="textarea"
+          placeholder="请填写申诉理由..."
+          :rows="4"
+          :maxlength="500"
+          show-count
+        />
+        <NButton type="primary" block :loading="submittingAppeal" @click="submitAppeal">提交申诉</NButton>
       </div>
     </NModal>
   </div>

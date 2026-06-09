@@ -129,6 +129,7 @@ public class ReviewServiceImpl implements ReviewService {
             Order order = orderMapper.selectById(review.getOrderId());
             if (order != null) {
                 vo.setGoodsId(order.getGoodsId());
+                vo.setReviewerRole(order.getBuyerId().equals(review.getReviewerId()) ? "BUYER" : "SELLER");
                 Goods goods = goodsMapper.selectById(order.getGoodsId());
                 if (goods != null) {
                     vo.setGoodsTitle(goods.getTitle());

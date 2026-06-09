@@ -18,6 +18,8 @@ public class Report {
     private Long handlerId;
     private String handleNote;
     private LocalDateTime handleTime;
+    private Long aiJudgmentId;
+    private Boolean aiAutoHandled;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

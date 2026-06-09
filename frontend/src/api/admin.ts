@@ -34,8 +34,16 @@ export function takeDownGoods(id: number, reason?: string) {
   return put<null>(`/admin/goods/${id}/take-down`, { reason })
 }
 
+export function deleteGoods(id: number) {
+  return del<null>(`/admin/goods/${id}`)
+}
+
 export function getAdminReports(params: { page: number; size: number; status?: string }) {
   return get<PageResult<Report>>('/admin/report', params as Record<string, unknown>)
+}
+
+export function getReportDetail(id: number) {
+  return get<Report>(`/admin/report/${id}`)
 }
 
 export function handleReport(id: number, status: string, handleNote?: string) {

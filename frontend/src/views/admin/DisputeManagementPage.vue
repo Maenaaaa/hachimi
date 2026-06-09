@@ -40,8 +40,9 @@ async function loadDisputes() {
       size: pageSize.value,
       status: statusFilter.value || undefined,
     })
-    disputeList.value = res.data as unknown as any[]
-    total.value = (res.data as unknown as any[]).length
+    const pageData = res.data as unknown as { records: any[]; total: number }
+    disputeList.value = pageData?.records || []
+    total.value = pageData?.total || 0
   } catch { message.error('加载争议列表失败') }
   finally { loading.value = false }
 }

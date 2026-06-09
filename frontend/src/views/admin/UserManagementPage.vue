@@ -42,8 +42,9 @@ async function loadUsers() {
       size: pageSize.value,
       keyword: keyword.value || undefined,
     })
-    users.value = res.data as unknown as User[]
-    total.value = (res.data as unknown as User[]).length
+    const pageData = res.data as unknown as { records: User[]; total: number }
+    users.value = pageData?.records || []
+    total.value = pageData?.total || 0
   } catch {
     message.error('加载用户列表失败')
   } finally {

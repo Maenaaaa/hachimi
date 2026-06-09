@@ -142,12 +142,14 @@ const columns: DataTableColumn<Goods>[] = [
     width: 220,
     render(row) {
       const buttons = []
-      buttons.push(
-        h(NButton, { size: 'tiny', quaternary: true, onClick: () => handleEdit(row) }, {
-          icon: () => h(NIcon, null, { default: () => h(Edit24Filled) }),
-          default: () => '编辑',
-        }),
-      )
+      if (row.status !== 'FINAL_REJECTED') {
+        buttons.push(
+          h(NButton, { size: 'tiny', quaternary: true, onClick: () => handleEdit(row) }, {
+            icon: () => h(NIcon, null, { default: () => h(Edit24Filled) }),
+            default: () => '编辑',
+          }),
+        )
+      }
       if (row.status === 'TAKEN_DOWN' || row.status === 'INACTIVE') {
         buttons.push(
           h(NButton, { size: 'tiny', quaternary: true, type: 'success' as const, onClick: () => handleRelist(row.id) }, { default: () => '重新上架' }),

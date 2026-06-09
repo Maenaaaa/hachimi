@@ -41,6 +41,6 @@ export function rejectCancelOrder(id: number) {
   return put<Order>(`/order/${id}/cancel-reject`)
 }
 
-export function createDispute(id: number, reason: string) {
-  return put<null>(`/order/${id}/dispute`, { reason })
+export function createDispute(id: number, reason: string, selectedChatMessageIds?: number[]) {
+  return put<null>(`/order/${id}/dispute`, { reason, selectedChatMessageIds })
 }

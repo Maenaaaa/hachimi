@@ -2,6 +2,7 @@ package com.campus.exchange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.campus.exchange.common.PageResult;
 import com.campus.exchange.entity.*;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
@@ -49,14 +50,16 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<AdminUserVO> listUsers(String keyword, int page, int size) {
+    public PageResult<AdminUserVO> listUsers(String keyword, int page, int size) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>().eq(User::getDeleted, 0);
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(User::getUsername, keyword).or().like(User::getNickname, keyword).or().like(User::getEmail, keyword));
         }
         wrapper.orderByDesc(User::getCreateTime);
         Page<User> p = new Page<>(page, size);
-        return userMapper.selectPage(p, wrapper).getRecords().stream().map(this::toAdminUserVO).toList();
+        userMapper.selectPage(p, wrapper);
+        List<AdminUserVO> records = p.getRecords().stream().map(this::toAdminUserVO).toList();
+        return PageResult.of(records, p.getTotal(), page, size);
     }
 
     @Override
@@ -115,7 +118,7 @@ public class AdminServiceImpl implements AdminService {
         if (goods == null) throw new BusinessException("商品不存在");
         goods.setStatus("TAKEN_DOWN");
         goodsMapper.updateById(goods);
-        notificationService.create(goods.getUserId(), "SYSTEM", "商品已被下架",
+        notificationService.create(goods.getUserId(), "REVIEW", "商品已被下架",
                 "您的商品「" + goods.getTitle() + "」已被管理员下架，原因：" + (reason != null ? reason : ""), goodsId);
     }
 
@@ -130,13 +133,15 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<AdminGoodsVO> listGoods(String status, String keyword, int page, int size) {
+    public PageResult<AdminGoodsVO> listGoods(String status, String keyword, int page, int size) {
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<Goods>().eq(Goods::getDeleted, 0);
         if (status != null && !status.isEmpty()) wrapper.eq(Goods::getStatus, status);
         if (keyword != null && !keyword.isEmpty()) wrapper.like(Goods::getTitle, keyword);
         wrapper.orderByDesc(Goods::getCreateTime);
         Page<Goods> p = new Page<>(page, size);
-        return goodsMapper.selectPage(p, wrapper).getRecords().stream().map(this::toAdminGoodsVO).toList();
+        goodsMapper.selectPage(p, wrapper);
+        List<AdminGoodsVO> records = p.getRecords().stream().map(this::toAdminGoodsVO).toList();
+        return PageResult.of(records, p.getTotal(), page, size);
     }
 
     @Override
@@ -168,16 +173,18 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<AdminUserVO> listVerifications(String status, int page, int size) {
+    public PageResult<AdminUserVO> listVerifications(String status, int page, int size) {
         Page<UserAuth> p = new Page<>(page, size);
         LambdaQueryWrapper<UserAuth> wrapper = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty()) wrapper.eq(UserAuth::getStatus, status);
         wrapper.orderByDesc(UserAuth::getCreateTime);
-        return userAuthMapper.selectPage(p, wrapper).getRecords().stream().map(auth -> {
+        userAuthMapper.selectPage(p, wrapper);
+        List<AdminUserVO> records = p.getRecords().stream().map(auth -> {
             User user = userMapper.selectById(auth.getUserId());
             if (user != null) return toAdminUserVO(user);
             return null;
         }).filter(vo -> vo != null).toList();
+        return PageResult.of(records, p.getTotal(), page, size);
     }
 
     private AdminUserVO toAdminUserVO(User user) {

@@ -82,8 +82,15 @@ public class OrderController {
 
     @PutMapping("/{id}/dispute")
     public Result<Void> createDispute(@CurrentUser User user, @PathVariable Long id,
-                                       @RequestBody Map<String, String> body) {
-        disputeService.create(id, user.getId(), body.get("reason"));
+                                       @RequestBody Map<String, Object> body) {
+        String reason = (String) body.get("reason");
+        List<Long> selectedChatMessageIds = null;
+        if (body.containsKey("selectedChatMessageIds")) {
+            selectedChatMessageIds = ((List<?>) body.get("selectedChatMessageIds")).stream()
+                    .map(item -> Long.parseLong(item.toString()))
+                    .toList();
+        }
+        disputeService.create(id, user.getId(), reason, selectedChatMessageIds);
         return Result.ok();
     }
 }

@@ -74,6 +74,7 @@ onMounted(async () => {
               </div>
               <NStatistic :value="stats?.totalOrders || 0" label="总订单数" />
             </div>
+            <div class="text-xs text-gray-400 mt-2">今日新增: {{ stats?.todayNewOrders || 0 }}</div>
           </NCard>
         </NGi>
 

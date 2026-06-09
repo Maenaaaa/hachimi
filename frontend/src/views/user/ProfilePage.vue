@@ -21,6 +21,7 @@ const message = useMessage()
 
 const profileUser = ref<any>(null)
 const tab = ref((route.query.tab as string) || 'goods')
+const reviewTab = ref('all')
 const myGoods = ref<any[]>([])
 const favorites = ref<any[]>([])
 const followers = ref<any[]>([])
@@ -31,6 +32,27 @@ const followModalTitle = ref('')
 const followModalList = ref<any[]>([])
 const loadingFollowList = ref(false)
 const isFollowing = ref(false)
+
+const buyerReviews = computed(() => reviews.value.filter(r => r.reviewerRole === 'BUYER'))
+const sellerReviews = computed(() => reviews.value.filter(r => r.reviewerRole === 'SELLER'))
+
+const filteredReviews = computed(() => {
+  if (reviewTab.value === 'buyer') return buyerReviews.value
+  if (reviewTab.value === 'seller') return sellerReviews.value
+  return reviews.value
+})
+
+const buyerPositiveRate = computed(() => {
+  if (buyerReviews.value.length < 3) return null
+  const positive = buyerReviews.value.filter(r => r.rating >= 4).length
+  return Math.round((positive / buyerReviews.value.length) * 100)
+})
+
+const sellerPositiveRate = computed(() => {
+  if (sellerReviews.value.length < 3) return null
+  const positive = sellerReviews.value.filter(r => r.rating >= 4).length
+  return Math.round((positive / sellerReviews.value.length) * 100)
+})
 
 const isOwnProfile = computed(() => {
   const userId = route.query.userId ? Number(route.query.userId) : null
@@ -189,7 +211,7 @@ watch(() => route.query.userId, () => {
           <NTabPane name="goods" tab="发布的商品">
             <div v-if="myGoods.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
               <div v-for="item in myGoods" :key="item.id" class="cursor-pointer" @click="goToGoods(item.id)">
-                <img :src="item.coverImage || ''" class="w-full h-28 object-cover rounded-lg" />
+                <img :src="getImageUrl(item.coverImage)" class="w-full h-28 object-cover rounded-lg" />
                 <NTag v-if="item.status" size="tiny" class="mt-1">{{ GOODS_STATUS[item.status] || item.status }}</NTag>
                 <div class="text-sm font-semibold mt-1 truncate">{{ item.title }}</div>
                 <div v-if="item.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(item.price) }}</div>
@@ -202,7 +224,7 @@ watch(() => route.query.userId, () => {
           <NTabPane v-if="isOwnProfile" name="favorites" tab="我的收藏">
             <div v-if="favorites.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
               <div v-for="fav in favorites" :key="fav.id" class="cursor-pointer" @click="goToGoods(fav.id)">
-                <img :src="fav.coverImage || ''" class="w-full h-28 object-cover rounded-lg" />
+                <img :src="getImageUrl(fav.coverImage)" class="w-full h-28 object-cover rounded-lg" />
                 <div class="text-sm font-semibold mt-1 truncate">{{ fav.title }}</div>
                 <div v-if="fav.tradeType !== 'EXCHANGE'" class="text-[#3B82F6] font-bold text-sm">{{ formatPrice(fav.price) }}</div>
                 <div v-else class="text-green-600 font-bold text-xs">🔄 仅置换</div>
@@ -212,18 +234,63 @@ watch(() => route.query.userId, () => {
           </NTabPane>
 
           <NTabPane name="reviews" tab="评价">
-            <div v-if="reviews.length > 0" class="space-y-3 mt-4">
-              <div v-for="review in reviews" :key="review.id" class="pb-3 dark:border-gray-700 border-b border-gray-100 last:border-0">
-                <div class="flex items-center gap-2">
-                  <img :src="getAvatarUrl(review.reviewerAvatar, 'thumb_64')" class="w-6 h-6 rounded-full object-cover" />
-                  <span class="text-sm font-semibold">{{ review.reviewerNickname }}</span>
-                  <span class="text-yellow-400 text-sm">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
-                  <span class="text-xs text-gray-400">{{ formatDate(review.createTime) }}</span>
+            <div class="mt-4">
+              <!-- Positive Rate Summary -->
+              <div v-if="reviews.length > 0" class="flex gap-4 mb-4">
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="text-gray-500">作为买家好评率:</span>
+                  <span v-if="buyerPositiveRate !== null" class="font-semibold text-[#3B82F6]">{{ buyerPositiveRate }}%</span>
+                  <span v-else class="text-gray-400">评价不足3条</span>
                 </div>
-                <p class="text-sm dark:text-gray-400 text-gray-600 mt-1">{{ review.content || '未填写评价内容' }}</p>
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="text-gray-500">作为卖家好评率:</span>
+                  <span v-if="sellerPositiveRate !== null" class="font-semibold text-[#10B981]">{{ sellerPositiveRate }}%</span>
+                  <span v-else class="text-gray-400">评价不足3条</span>
+                </div>
               </div>
+
+              <!-- Filter Tabs -->
+              <div v-if="reviews.length > 0" class="flex gap-2 mb-4">
+                <button
+                  class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                  :class="reviewTab === 'all' ? 'bg-[#3B82F6] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                  @click="reviewTab = 'all'"
+                >
+                  全部 ({{ reviews.length }})
+                </button>
+                <button
+                  class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                  :class="reviewTab === 'buyer' ? 'bg-[#3B82F6] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                  @click="reviewTab = 'buyer'"
+                >
+                  买家 ({{ buyerReviews.length }})
+                </button>
+                <button
+                  class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                  :class="reviewTab === 'seller' ? 'bg-[#3B82F6] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                  @click="reviewTab = 'seller'"
+                >
+                  卖家 ({{ sellerReviews.length }})
+                </button>
+              </div>
+
+              <!-- Reviews List -->
+              <div v-if="filteredReviews.length > 0" class="space-y-3">
+                <div v-for="review in filteredReviews" :key="review.id" class="pb-3 dark:border-gray-700 border-b border-gray-100 last:border-0">
+                  <div class="flex items-center gap-2">
+                    <img :src="getAvatarUrl(review.reviewerAvatar, 'thumb_64')" class="w-6 h-6 rounded-full object-cover" />
+                    <span class="text-sm font-semibold">{{ review.reviewerNickname }}</span>
+                    <NTag v-if="review.reviewerRole === 'BUYER'" size="tiny" type="info">买家</NTag>
+                    <NTag v-else-if="review.reviewerRole === 'SELLER'" size="tiny" type="success">卖家</NTag>
+                    <span class="text-yellow-400 text-sm">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
+                    <span class="text-xs text-gray-400">{{ formatDate(review.createTime) }}</span>
+                  </div>
+                  <p class="text-sm dark:text-gray-400 text-gray-600 mt-1">{{ review.content || '未填写评价内容' }}</p>
+                </div>
+              </div>
+
+              <NEmpty v-if="reviews.length === 0" description="暂无评价" />
             </div>
-            <NEmpty v-else description="暂无评价" class="mt-4" />
           </NTabPane>
 
         </NTabs>

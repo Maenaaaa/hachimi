@@ -2,11 +2,16 @@ package com.campus.exchange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.campus.exchange.ai.AiJudgmentType;
+import com.campus.exchange.ai.dto.ReportContext;
+import com.campus.exchange.ai.prompt.PromptBuilder;
+import com.campus.exchange.common.PageResult;
 import com.campus.exchange.dto.CreateReportDTO;
 import com.campus.exchange.dto.HandleReportDTO;
 import com.campus.exchange.entity.*;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
+import com.campus.exchange.service.AiJudgeService;
 import com.campus.exchange.service.NotificationService;
 import com.campus.exchange.service.CreditScoreService;
 import com.campus.exchange.service.ReportService;
@@ -25,10 +30,14 @@ public class ReportServiceImpl implements ReportService {
     private final ReportMapper reportMapper;
     private final UserMapper userMapper;
     private final GoodsMapper goodsMapper;
+    private final GoodsImageMapper goodsImageMapper;
     private final CreditScoreService creditScoreService;
     private final NotificationService notificationService;
+    private final AiJudgeService aiJudgeService;
+    private final AiConfigMapper configMapper;
 
     @Override
+    @Transactional
     public void create(Long reporterId, CreateReportDTO dto) {
         if ("GOODS".equals(dto.getType())) {
             Goods goods = goodsMapper.selectById(dto.getTargetId());
@@ -52,6 +61,83 @@ public class ReportServiceImpl implements ReportService {
         report.setDescription(dto.getDescription());
         report.setStatus("PENDING");
         reportMapper.insert(report);
+
+        triggerAiReview(report);
+    }
+
+    private void triggerAiReview(Report report) {
+        try {
+            AiConfig config = configMapper.selectOne(
+                    new LambdaQueryWrapper<AiConfig>().eq(AiConfig::getConfigKey, "report_auto_review"));
+            if (config != null && "false".equals(config.getConfigValue())) {
+                return;
+            }
+
+            String targetInfo = buildTargetInfo(report);
+            double targetCreditScore = getTargetCreditScore(report);
+
+            String prompt = PromptBuilder.buildReportPrompt(
+                    report.getType(),
+                    report.getReason(),
+                    report.getDescription(),
+                    targetInfo,
+                    targetCreditScore
+            );
+
+            List<String> imageUrls = List.of();
+            if ("GOODS".equals(report.getType())) {
+                Goods goods = goodsMapper.selectById(report.getTargetId());
+                if (goods != null) {
+                    imageUrls = goodsImageMapper.selectList(
+                            new LambdaQueryWrapper<GoodsImage>()
+                                    .eq(GoodsImage::getGoodsId, goods.getId())
+                                    .orderByAsc(GoodsImage::getSortOrder)
+                    ).stream().map(GoodsImage::getImageUrl).toList();
+                }
+            }
+
+            if (imageUrls != null && !imageUrls.isEmpty()) {
+                aiJudgeService.judgeAsyncWithImages(AiJudgmentType.REPORT, report.getId(), prompt, imageUrls);
+            } else {
+                aiJudgeService.judgeAsync(AiJudgmentType.REPORT, report.getId(), prompt);
+            }
+
+            report.setAiAutoHandled(true);
+            reportMapper.updateById(report);
+        } catch (Exception e) {
+            // AI 审核失败不影响举报创建
+        }
+    }
+
+    private String buildTargetInfo(Report report) {
+        if ("GOODS".equals(report.getType())) {
+            Goods goods = goodsMapper.selectById(report.getTargetId());
+            if (goods != null) {
+                return "商品标题: " + goods.getTitle() + "\n商品描述: " + goods.getDescription()
+                        + "\n商品价格: " + goods.getPrice();
+            }
+        } else if ("USER".equals(report.getType())) {
+            User user = userMapper.selectById(report.getTargetId());
+            if (user != null) {
+                return "用户昵称: " + user.getNickname() + "\n用户信用分: " + user.getCreditScore();
+            }
+        }
+        return "信息不足";
+    }
+
+    private double getTargetCreditScore(Report report) {
+        if ("USER".equals(report.getType())) {
+            User user = userMapper.selectById(report.getTargetId());
+            return user != null && user.getCreditScore() != null ? user.getCreditScore().doubleValue() : 5.0;
+        }
+        if ("GOODS".equals(report.getType())) {
+            Goods goods = goodsMapper.selectById(report.getTargetId());
+            if (goods != null) {
+                User user = userMapper.selectById(goods.getUserId());
+                return user != null && user.getCreditScore() != null ? user.getCreditScore().doubleValue() : 5.0;
+            }
+        }
+        return 5.0;
     }
 
     @Override
@@ -63,11 +149,20 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public List<ReportVO> getPendingReports(int page, int size) {
+    public PageResult<ReportVO> getPendingReports(int page, int size) {
         Page<Report> p = new Page<>(page, size);
-        return reportMapper.selectPage(p,
+        reportMapper.selectPage(p,
                 new LambdaQueryWrapper<Report>().orderByAsc(Report::getStatus)
-                        .orderByDesc(Report::getCreateTime)).getRecords().stream().map(this::toVO).toList();
+                        .orderByDesc(Report::getCreateTime));
+        List<ReportVO> records = p.getRecords().stream().map(this::toVO).toList();
+        return PageResult.of(records, p.getTotal(), page, size);
+    }
+
+    @Override
+    public ReportVO getById(Long reportId) {
+        Report report = reportMapper.selectById(reportId);
+        if (report == null) throw new BusinessException("举报不存在");
+        return toVO(report);
     }
 
     @Override
@@ -103,7 +198,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         notificationService.create(report.getReporterId(), "REVIEW", "举报处理结果",
-                "您提交的举报已处理，结果：" + ("APPROVED".equals(dto.getStatus()) ? "举报成立" : "举报不成立"), reportId);
+                "您提交的举报已处理，结果：" + ("APPROVED".equals(dto.getStatus()) ? "举报成立" : "举报不成立"), report.getTargetId());
     }
 
     private ReportVO toVO(Report report) {

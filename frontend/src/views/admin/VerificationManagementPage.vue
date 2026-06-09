@@ -49,8 +49,9 @@ async function loadVerifications() {
       size: pageSize.value,
       status: statusFilter.value || undefined,
     })
-    verificationList.value = res.data as unknown as User[]
-    total.value = (res.data as unknown as User[]).length
+    const pageData = res.data as unknown as { records: User[]; total: number }
+    verificationList.value = pageData?.records || []
+    total.value = pageData?.total || 0
   } catch {
     message.error('加载认证列表失败')
   } finally {

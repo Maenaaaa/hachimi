@@ -1,5 +1,6 @@
 package com.campus.exchange.controller;
 
+import com.campus.exchange.common.PageResult;
 import com.campus.exchange.common.Result;
 import com.campus.exchange.entity.User;
 import com.campus.exchange.security.CurrentUser;
@@ -9,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,7 +21,7 @@ public class DisputeController {
     private final DisputeService disputeService;
 
     @GetMapping
-    public Result<List<DisputeVO>> list(@RequestParam(required = false) String status,
+    public Result<PageResult<DisputeVO>> list(@RequestParam(required = false) String status,
                                          @RequestParam(defaultValue = "1") int page,
                                          @RequestParam(defaultValue = "20") int size) {
         return Result.ok(disputeService.list(status, page, size));

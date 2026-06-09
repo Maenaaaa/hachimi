@@ -2,12 +2,16 @@ package com.campus.exchange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.campus.exchange.ai.AiJudgmentType;
+import com.campus.exchange.ai.dto.GoodsReviewContext;
+import com.campus.exchange.ai.prompt.PromptBuilder;
 import com.campus.exchange.dto.GoodsPublishDTO;
 import com.campus.exchange.dto.GoodsSearchDTO;
 import com.campus.exchange.dto.GoodsUpdateDTO;
 import com.campus.exchange.entity.*;
 import com.campus.exchange.exception.BusinessException;
 import com.campus.exchange.mapper.*;
+import com.campus.exchange.service.AiJudgeService;
 import com.campus.exchange.service.GoodsService;
 import com.campus.exchange.vo.GoodsCardVO;
 import com.campus.exchange.vo.GoodsDetailVO;
@@ -35,6 +39,8 @@ public class GoodsServiceImpl implements GoodsService {
     private final UserMapper userMapper;
     private final OrderMapper orderMapper;
     private final StringRedisTemplate redisTemplate;
+    private final AiJudgeService aiJudgeService;
+    private final AiConfigMapper configMapper;
 
     @Override
     @Transactional
@@ -60,7 +66,48 @@ public class GoodsServiceImpl implements GoodsService {
             goodsImageMapper.insert(img);
         }
 
+        triggerAiReview(goods);
+
         return getDetail(goods.getId(), userId);
+    }
+
+    private void triggerAiReview(Goods goods) {
+        try {
+            AiConfig config = configMapper.selectOne(
+                    new LambdaQueryWrapper<AiConfig>().eq(AiConfig::getConfigKey, "goods_auto_review"));
+            if (config != null && "false".equals(config.getConfigValue())) {
+                return;
+            }
+
+            User publisher = userMapper.selectById(goods.getUserId());
+            Category category = categoryMapper.selectById(goods.getCategoryId());
+
+            double publisherCredit = publisher != null && publisher.getCreditScore() != null ? publisher.getCreditScore().doubleValue() : 5.0;
+            String categoryName = category != null ? category.getName() : "未分类";
+
+            String prompt = PromptBuilder.buildGoodsReviewPrompt(
+                    goods.getTitle(),
+                    goods.getDescription() != null ? goods.getDescription() : "",
+                    goods.getPrice(),
+                    goods.getOriginalPrice(),
+                    goods.getCondition(),
+                    categoryName,
+                    publisherCredit
+            );
+
+            List<String> imageUrls = goodsImageMapper.selectList(
+                    new LambdaQueryWrapper<GoodsImage>()
+                            .eq(GoodsImage::getGoodsId, goods.getId())
+                            .orderByAsc(GoodsImage::getSortOrder)
+            ).stream().map(GoodsImage::getImageUrl).toList();
+
+            aiJudgeService.judgeAsyncWithImages(AiJudgmentType.GOODS_REVIEW, goods.getId(), prompt, imageUrls);
+
+            goods.setAiReviewStatus("PENDING");
+            goodsMapper.updateById(goods);
+        } catch (Exception e) {
+            // AI 审核失败不影响商品发布
+        }
     }
 
     @Override
@@ -95,6 +142,8 @@ public class GoodsServiceImpl implements GoodsService {
             }
         }
 
+        triggerAiReview(goods);
+
         return getDetail(goods.getId(), userId);
     }
 
@@ -122,6 +171,11 @@ public class GoodsServiceImpl implements GoodsService {
         if (!goods.getUserId().equals(userId)) throw new BusinessException(403, "无权操作此商品");
         goods.setStatus(status);
         goodsMapper.updateById(goods);
+        
+        // 重新提交审核时触发AI审核
+        if ("PENDING_REVIEW".equals(status)) {
+            triggerAiReview(goods);
+        }
     }
 
     @Override

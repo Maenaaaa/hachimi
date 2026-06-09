@@ -13,6 +13,7 @@ public class ReviewVO {
     private Long reviewerId;
     private String reviewerNickname;
     private String reviewerAvatar;
+    private String reviewerRole;
     private Integer rating;
     private String content;
     private LocalDateTime createTime;

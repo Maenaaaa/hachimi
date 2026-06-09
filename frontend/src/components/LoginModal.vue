@@ -115,12 +115,17 @@ function switchTab(tab: 'login' | 'register') {
     :closable="!loading"
     @update:show="(val: boolean) => { if (!val) onClose() }"
   >
-    <div class="w-400px bg-white rounded-2xl p-8" style="max-width: 90vw">
+    <div class="w-400px bg-white dark:bg-gray-800 rounded-2xl p-8" style="max-width: 90vw">
       <div class="text-center mb-6">
-        <div class="w-14 h-14 bg-[#3B82F6] rounded-2xl flex items-center justify-center mx-auto mb-3">
-          <span class="text-white text-xl font-bold">C</span>
+        <div class="logo-icon mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M17 1l4 4-4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 23l-4-4 4-4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <h2 class="text-xl font-bold text-gray-800">校园淘</h2>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">校园淘</h2>
       </div>
 
       <NTabs v-model:value="activeTab" type="line" justify-content="center" @update:value="switchTab">
@@ -145,7 +150,7 @@ function switchTab(tab: 'login' | 'register') {
             <NButton type="primary" block :loading="loading" @click="handleLogin">登录</NButton>
           </NForm>
 
-          <div class="text-center text-sm mt-4 text-gray-400">
+          <div class="text-center text-sm mt-4 text-gray-400 dark:text-gray-500">
             还没有账号？<span class="text-[#3B82F6] cursor-pointer" @click="switchTab('register')">立即注册</span>
           </div>
         </NTabPane>
@@ -175,7 +180,7 @@ function switchTab(tab: 'login' | 'register') {
             <NButton type="primary" block :loading="loading" @click="handleRegister">注册</NButton>
           </NForm>
 
-          <div class="text-center text-sm mt-4 text-gray-400">
+          <div class="text-center text-sm mt-4 text-gray-400 dark:text-gray-500">
             已有账号？<span class="text-[#3B82F6] cursor-pointer" @click="switchTab('login')">去登录</span>
           </div>
         </NTabPane>
@@ -183,3 +188,16 @@ function switchTab(tab: 'login' | 'register') {
     </div>
   </NModal>
 </template>
+
+<style scoped>
+.logo-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+</style>

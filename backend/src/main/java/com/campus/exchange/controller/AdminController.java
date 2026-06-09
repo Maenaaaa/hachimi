@@ -1,5 +1,6 @@
 package com.campus.exchange.controller;
 
+import com.campus.exchange.common.PageResult;
 import com.campus.exchange.common.Result;
 import com.campus.exchange.dto.CreateAnnouncementDTO;
 import com.campus.exchange.dto.HandleReportDTO;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,7 +35,7 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public Result<List<AdminUserVO>> listUsers(@RequestParam(required = false) String keyword,
+    public Result<PageResult<AdminUserVO>> listUsers(@RequestParam(required = false) String keyword,
                                                 @RequestParam(defaultValue = "1") int page,
                                                 @RequestParam(defaultValue = "20") int size) {
         return Result.ok(adminService.listUsers(keyword, page, size));
@@ -59,7 +59,7 @@ public class AdminController {
     }
 
     @GetMapping("/goods")
-    public Result<List<AdminGoodsVO>> listGoods(@RequestParam(required = false) String status,
+    public Result<PageResult<AdminGoodsVO>> listGoods(@RequestParam(required = false) String status,
                                                  @RequestParam(required = false) String keyword,
                                                  @RequestParam(defaultValue = "1") int page,
                                                  @RequestParam(defaultValue = "20") int size) {
@@ -91,9 +91,14 @@ public class AdminController {
     }
 
     @GetMapping("/report")
-    public Result<List<ReportVO>> getReports(@RequestParam(defaultValue = "1") int page,
+    public Result<PageResult<ReportVO>> getReports(@RequestParam(defaultValue = "1") int page,
                                               @RequestParam(defaultValue = "20") int size) {
         return Result.ok(reportService.getPendingReports(page, size));
+    }
+
+    @GetMapping("/report/{id}")
+    public Result<ReportVO> getReportDetail(@PathVariable Long id) {
+        return Result.ok(reportService.getById(id));
     }
 
     @PutMapping("/report/{id}/handle")
@@ -104,7 +109,7 @@ public class AdminController {
     }
 
     @GetMapping("/verifications")
-    public Result<List<AdminUserVO>> listVerifications(@RequestParam(required = false) String status,
+    public Result<PageResult<AdminUserVO>> listVerifications(@RequestParam(required = false) String status,
                                                         @RequestParam(defaultValue = "1") int page,
                                                         @RequestParam(defaultValue = "20") int size) {
         return Result.ok(adminService.listVerifications(status, page, size));

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAdminGoods, approveGoods, rejectGoods, takeDownGoods } from '@/api/admin'
+import { getAdminGoods, approveGoods, rejectGoods, takeDownGoods, deleteGoods } from '@/api/admin'
 import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
 import { GOODS_STATUS } from '@/constants'
 import type { Goods } from '@/types/entity'
@@ -57,8 +57,9 @@ async function loadGoods() {
       keyword: keyword.value || undefined,
       status: statusFilter.value || undefined,
     })
-    goodsList.value = res.data as unknown as any[]
-    total.value = (res.data as unknown as any[]).length
+    const pageData = res.data as unknown as { records: Goods[]; total: number }
+    goodsList.value = pageData?.records || []
+    total.value = pageData?.total || 0
   } catch {
     message.error('加载商品列表失败')
   } finally {
@@ -120,6 +121,24 @@ function handleTakeDown(id: number) {
         loadGoods()
       } catch {
         message.error('操作失败')
+      }
+    },
+  })
+}
+
+function handleDelete(id: number) {
+  dialog.error({
+    title: '确认删除',
+    content: '确定要删除该商品吗？此操作不可恢复！',
+    positiveText: '确定删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await deleteGoods(id)
+        message.success('已删除')
+        loadGoods()
+      } catch {
+        message.error('删除失败')
       }
     },
   })
@@ -201,7 +220,7 @@ const columns: DataTableColumn<any>[] = [
   {
     title: '操作',
     key: 'actions',
-    width: 180,
+    width: 200,
     render(row) {
       if (row.status === 'PENDING_REVIEW') {
         return h(NSpace, null, {
@@ -212,7 +231,15 @@ const columns: DataTableColumn<any>[] = [
         })
       }
       if (row.status === 'ACTIVE') {
-        return h(NButton, { size: 'tiny', type: 'warning' as const, onClick: () => handleTakeDown(row.id) }, { default: () => '下架' })
+        return h(NSpace, null, {
+          default: () => [
+            h(NButton, { size: 'tiny', type: 'warning' as const, onClick: () => handleTakeDown(row.id) }, { default: () => '下架' }),
+            h(NButton, { size: 'tiny', type: 'error' as const, onClick: () => handleDelete(row.id) }, { default: () => '删除' }),
+          ],
+        })
+      }
+      if (row.status === 'INACTIVE' || row.status === 'REJECTED' || row.status === 'TAKEN_DOWN') {
+        return h(NButton, { size: 'tiny', type: 'error' as const, onClick: () => handleDelete(row.id) }, { default: () => '删除' })
       }
       return h('span', { class: 'text-xs text-gray-400' }, '--')
     },
