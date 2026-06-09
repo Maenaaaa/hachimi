@@ -45,6 +45,7 @@ const hotTags = ['教材', 'iPad', '自行车', '键盘', '显示器', '考研',
 const categories = ref<Category[]>([])
 const recommendGoods = ref<Goods[]>([])
 const latestGoods = ref<Goods[]>([])
+const allAnnouncements = ref<Announcement[]>([])
 const announcements = ref<Announcement[]>([])
 const loading = ref(true)
 const currentBannerIndex = ref(0)
@@ -54,6 +55,7 @@ const showAnnouncementModal = ref(false)
 const currentAnnouncementIndex = ref(0)
 const hideAnnouncements = ref(false)
 const currentAnnouncement = computed(() => announcements.value[currentAnnouncementIndex.value] || null)
+const displayAnnouncement = computed(() => selectedAnnouncement.value || currentAnnouncement.value)
 const hasMoreAnnouncements = computed(() => currentAnnouncementIndex.value < announcements.value.length - 1)
 const dismissedKey = 'announcement_dismissed_ids'
 
@@ -108,10 +110,11 @@ onMounted(async () => {
     if (recRes.status === 'fulfilled') recommendGoods.value = recRes.value.data
     if (latestRes.status === 'fulfilled') latestGoods.value = latestRes.value.data
     if (annRes.status === 'fulfilled') {
+      allAnnouncements.value = (annRes.value.data as Announcement[]) || []
       const dismissed = getDismissedIds()
-      const unread = (annRes.value.data as Announcement[]).filter(a => !dismissed.has(a.id))
+      const unread = allAnnouncements.value.filter(a => !dismissed.has(a.id))
+      announcements.value = unread
       if (unread.length > 0) {
-        announcements.value = unread
         currentAnnouncementIndex.value = 0
         showAnnouncementModal.value = true
       }
@@ -149,6 +152,13 @@ function goToSearch(keyword: string) {
 function toggleFavorite(goods: Goods, event: Event) {
   event.stopPropagation()
   message.info('收藏功能开发中')
+}
+
+const selectedAnnouncement = ref<Announcement | null>(null)
+
+function openAnnouncement(ann: Announcement) {
+  selectedAnnouncement.value = ann
+  showAnnouncementModal.value = true
 }
 
 const categoryIcons: Record<string, string> = {
@@ -463,17 +473,17 @@ function getCategoryColor(name: string) {
       </div>
 
       <!-- 公告 -->
-      <div class="sidebar-card announcement-card" v-if="announcements.length > 0">
+      <div class="sidebar-card announcement-card" v-if="allAnnouncements.length > 0">
         <h4 class="card-title">
           <NIcon :size="16" class="text-[#F59E0B]"><Tag24Filled /></NIcon>
           平台公告
         </h4>
         <div class="announcement-list">
           <div
-            v-for="ann in announcements.slice(0, 3)"
+            v-for="ann in allAnnouncements.slice(0, 3)"
             :key="ann.id"
             class="announcement-item"
-            @click="showAnnouncementModal = true"
+            @click="openAnnouncement(ann)"
           >
             <span class="announcement-dot"></span>
             <span class="announcement-title line-clamp-1">{{ ann.title }}</span>
@@ -489,29 +499,36 @@ function getCategoryColor(name: string) {
       :mask-closable="true"
       preset="card"
       class="announcement-modal"
+      @after-leave="selectedAnnouncement = null"
     >
       <template #header>
         <div class="modal-header">
           <span class="modal-icon">📢</span>
           <span class="modal-title">平台公告</span>
-          <span v-if="announcements.length > 1" class="modal-count">
+          <span v-if="!selectedAnnouncement && announcements.length > 1" class="modal-count">
             {{ currentAnnouncementIndex + 1 }} / {{ announcements.length }}
           </span>
         </div>
       </template>
 
-      <div v-if="currentAnnouncement" class="announcement-content">
-        <h3 class="announcement-heading">{{ currentAnnouncement.title }}</h3>
-        <p class="announcement-text">{{ currentAnnouncement.content }}</p>
-        <p class="announcement-time">{{ formatDate(currentAnnouncement.createTime) }}</p>
+      <div v-if="displayAnnouncement" class="announcement-content">
+        <h3 class="announcement-heading">{{ displayAnnouncement.title }}</h3>
+        <p class="announcement-text">{{ displayAnnouncement.content }}</p>
+        <p class="announcement-time">{{ formatDate(displayAnnouncement.createTime) }}</p>
       </div>
 
       <template #footer>
         <div class="modal-footer">
-          <NCheckbox v-model:checked="hideAnnouncements">不再弹出</NCheckbox>
-          <NButton type="primary" @click="handleNextAnnouncement">
-            {{ hasMoreAnnouncements ? '下一条' : '我知道了' }}
-          </NButton>
+          <template v-if="selectedAnnouncement">
+            <div></div>
+            <NButton type="primary" @click="showAnnouncementModal = false">我知道了</NButton>
+          </template>
+          <template v-else>
+            <NCheckbox v-model:checked="hideAnnouncements">不再弹出</NCheckbox>
+            <NButton type="primary" @click="handleNextAnnouncement">
+              {{ hasMoreAnnouncements ? '下一条' : '我知道了' }}
+            </NButton>
+          </template>
         </div>
       </template>
     </NModal>
