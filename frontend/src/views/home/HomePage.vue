@@ -498,7 +498,7 @@ function getCategoryColor(name: string) {
       :closable="true"
       :mask-closable="true"
       preset="card"
-      class="announcement-modal"
+      style="width: 460px; border-radius: 12px"
       @after-leave="selectedAnnouncement = null"
     >
       <template #header>
@@ -1197,7 +1197,7 @@ function getCategoryColor(name: string) {
 
 /* Modal */
 .announcement-modal {
-  width: 480px;
+  width: 400px;
 }
 
 .modal-header {
@@ -1223,6 +1223,8 @@ function getCategoryColor(name: string) {
 
 .announcement-content {
   padding: 8px 0;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .announcement-heading {
