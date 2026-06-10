@@ -11,8 +11,12 @@ import {
   NFormItem,
   NModal,
   NTag,
+  NUpload,
+  NUploadDragger,
+  NIcon,
   useMessage,
   type FormInst,
+  type UploadFileInfo,
 } from 'naive-ui'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import type { ProfileForm, PasswordForm } from '@/types/entity'
@@ -29,7 +33,8 @@ const profileFormRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
 const saving = ref(false)
 const showVerifyModal = ref(false)
-const verifyForm = ref({ realName: '', idNumber: '' })
+const verifyForm = ref({ realName: '', studentId: '', authTitle: '' })
+const verifyImage = ref<File | null>(null)
 
 const profileForm = ref<ProfileForm>({
   nickname: '',
@@ -123,19 +128,39 @@ async function changePassword() {
   }
 }
 
+function handleVerifyFileChange(options: { file: UploadFileInfo }) {
+  const file = options.file.file
+  if (file) {
+    verifyImage.value = file
+  }
+}
+
 async function handleVerify() {
-  if (!verifyForm.value.realName || !verifyForm.value.idNumber) {
+  if (!verifyForm.value.realName || !verifyForm.value.studentId || !verifyForm.value.authTitle) {
     message.warning('请填写完整信息')
+    return
+  }
+  if (!verifyImage.value) {
+    message.warning('请上传学生证/身份证照片')
     return
   }
   try {
     const { verifyUser } = await import('@/api/user')
-    await verifyUser(verifyForm.value)
-    message.success('实名认证成功')
+    const formData = new FormData()
+    const dtoBlob = new Blob([JSON.stringify({
+      realName: verifyForm.value.realName,
+      studentId: verifyForm.value.studentId,
+      authTitle: verifyForm.value.authTitle,
+    })], { type: 'application/json' })
+    formData.append('dto', dtoBlob)
+    formData.append('image', verifyImage.value)
+    await verifyUser(formData)
+    message.success('认证申请已提交，请等待审核')
     showVerifyModal.value = false
-    userStore.fetchProfile()
+    verifyForm.value = { realName: '', studentId: '', authTitle: '' }
+    verifyImage.value = null
   } catch {
-    message.error('认证失败')
+    message.error('认证提交失败')
   }
 }
 </script>
@@ -216,10 +241,27 @@ async function handleVerify() {
     </NCard>
 
     <!-- Verify Modal -->
-    <NModal v-model:show="showVerifyModal" title="实名认证" preset="card" style="width: 400px; border-radius: 12px">
+    <NModal v-model:show="showVerifyModal" title="实名认证" preset="card" style="width: 480px; border-radius: 12px">
       <div class="space-y-4">
         <NInput v-model:value="verifyForm.realName" placeholder="真实姓名" />
-        <NInput v-model:value="verifyForm.idNumber" placeholder="身份证号" />
+        <NInput v-model:value="verifyForm.studentId" placeholder="学号" />
+        <NInput v-model:value="verifyForm.authTitle" placeholder="认证称号（如：校园达人、优质卖家）" />
+        <NUpload
+          accept="image/*"
+          :max="1"
+          :default-upload="false"
+          @change="handleVerifyFileChange"
+        >
+          <NUploadDragger>
+            <div style="margin-bottom: 12px">
+              <NIcon size="48" :depth="3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </NIcon>
+            </div>
+            <div style="margin-bottom: 8px"><strong>点击或拖拽上传</strong></div>
+            <div style="font-size: 12px; color: #999">请上传学生证或身份证照片（JPG/PNG，≤5MB）</div>
+          </NUploadDragger>
+        </NUpload>
         <NButton type="primary" block @click="handleVerify">提交认证</NButton>
       </div>
     </NModal>

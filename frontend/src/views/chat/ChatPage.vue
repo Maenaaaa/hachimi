@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getConversationList, getMessages, createConversation, markAsRead } from '@/api/chat'
+import { getBuyerOrders, getSellerOrders } from '@/api/order'
 import { useUserStore } from '@/stores/user'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { formatDate } from '@/utils'
@@ -9,7 +10,7 @@ import { upload } from '@/utils/request'
 import {
   NButton, NInput, NAvatar, NBadge, NSpin, NEmpty, NIcon, NImage, NCard, useMessage,
 } from 'naive-ui'
-import { Send24Filled, Chat24Filled, Gift24Filled, Image24Filled } from '@vicons/fluent'
+import { Send24Filled, Chat24Filled, Gift24Filled, Image24Filled, Cart24Filled } from '@vicons/fluent'
 import { getImageUrl, formatPrice, getAvatarUrl } from '@/utils'
 
 const route = useRoute()
@@ -106,6 +107,32 @@ function handleSendCard() {
   _send(card, 'CARD')
 }
 
+async function handleSendOrderCard() {
+  if (!activeConv.value || !activeConvId.value) return
+  const goodsId = activeConv.value.goodsId
+  try {
+    const [buyerRes, sellerRes] = await Promise.all([getBuyerOrders(), getSellerOrders()])
+    const allOrders = [...(buyerRes.data || []), ...(sellerRes.data || [])]
+    const order = allOrders.find(o => o.goodsId === goodsId)
+    if (!order) {
+      message.warning('该商品暂无订单')
+      return
+    }
+    const card = JSON.stringify({
+      type: 'order',
+      orderId: order.id,
+      goodsId: order.goodsId,
+      title: order.goodsTitle,
+      coverImage: order.goodsCoverImage,
+      status: order.status,
+      amount: order.amount,
+    })
+    _send(card, 'CARD')
+  } catch {
+    message.error('查找订单失败')
+  }
+}
+
 function _send(content: string, messageType: string) {
   send('/app/chat', JSON.stringify({
     conversationId: activeConvId.value,
@@ -119,11 +146,22 @@ function isCard(msg: any): boolean {
   const type = msg.messageType || msg.type
   return type === 'CARD' || type === 'card'
 }
+function isOrderCard(msg: any): boolean {
+  if (!isCard(msg)) return false
+  try { return JSON.parse(msg.content)?.type === 'order' } catch { return false }
+}
 function isImage(msg: any): boolean { 
   const type = msg.messageType || msg.type
   return type === 'IMAGE' || type === 'image'
 }
 function parseCard(msg: any): any { try { return JSON.parse(msg.content) } catch { return null } }
+
+const orderStatusMap: Record<string, { label: string; color: string }> = {
+  PENDING: { label: '待确认', color: '#F59E0B' },
+  IN_PROGRESS: { label: '进行中', color: '#3B82F6' },
+  COMPLETED: { label: '已完成', color: '#10B981' },
+  CANCELLED: { label: '已取消', color: '#94A3B8' },
+}
 
 function formatLastMessage(message: any): string {
   if (!message) return '暂无消息'
@@ -131,6 +169,7 @@ function formatLastMessage(message: any): string {
   if (!content) return '暂无消息'
   // 直接用正则匹配
   if (content.includes('"type":"card"') || content.includes('"type": "card"')) return '(商品卡片)'
+  if (content.includes('"type":"order"') || content.includes('"type": "order"')) return '(订单卡片)'
   if (content.includes('"type":"image"') || content.includes('"type": "image"')) return '(图片)'
   // 如果是图片URL
   if (/https?:\/\//.test(content) && /\.(jpg|jpeg|png|gif|webp)/i.test(content)) return '(图片)'
@@ -246,7 +285,8 @@ watch(connected, (val) => { if (val) loadConversations() })
       <!-- Chat Area -->
       <div class="flex-1 flex flex-col">
         <template v-if="activeConv">
-          <div class="p-4 dark:border-gray-700 border-b border-gray-100 flex items-center gap-3">
+          <div class="p-4 dark:border-gray-700 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            @click="router.push(`/profile?userId=${activeConv.otherUserId}`)">
             <img :src="getAvatarUrl(activeConv.otherUserAvatar, 'thumb_64')" class="w-9 h-9 rounded-full object-cover" />
             <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm">{{ activeConv.otherUserNickname }}</div>
@@ -280,10 +320,28 @@ watch(connected, (val) => { if (val) loadConversations() })
                 <div v-for="msg in messages" :key="msg.id"
                   class="flex gap-2" :class="msg.senderId === userStore.user?.id ? 'justify-end' : 'justify-start'">
                   <img v-if="msg.senderId !== userStore.user?.id"
-                    :src="getAvatarUrl(msg.senderAvatar, 'thumb_64')" class="w-7 h-7 rounded-full object-cover shrink-0" />
+                    :src="getAvatarUrl(msg.senderAvatar, 'thumb_64')" class="w-7 h-7 rounded-full object-cover shrink-0 cursor-pointer hover:opacity-80"
+                    @click.stop="router.push(`/profile?userId=${msg.senderId}`)" />
                   <div style="max-width: 70%">
-                    <!-- Card message -->
-                    <div v-if="isCard(msg) && parseCard(msg)" class="rounded-2xl overflow-hidden shadow-sm"
+                    <!-- Order Card -->
+                    <div v-if="isOrderCard(msg) && parseCard(msg)" class="rounded-2xl overflow-hidden shadow-sm"
+                      :class="msg.senderId === userStore.user?.id ? 'rounded-br-md' : 'rounded-bl-md'"
+                      style="width: 220px; cursor: pointer" @click="router.push('/order/' + parseCard(msg).orderId)">
+                      <img :src="getImageUrl(parseCard(msg).coverImage) || ''" class="w-full h-32 object-cover" />
+                      <div class="p-3 dark:bg-gray-700 bg-white">
+                        <div class="flex items-center gap-1.5">
+                          <div class="text-xs text-gray-400">订单卡片</div>
+                          <div class="text-xs px-1.5 py-0.5 rounded-full text-white" :style="{ backgroundColor: orderStatusMap[parseCard(msg).status]?.color || '#94A3B8' }">
+                            {{ orderStatusMap[parseCard(msg).status]?.label || parseCard(msg).status }}
+                          </div>
+                        </div>
+                        <div class="text-sm font-semibold dark:text-gray-100 text-gray-800 mt-1 truncate">{{ parseCard(msg).title }}</div>
+                        <div class="text-[#3B82F6] font-bold text-sm mt-1">{{ formatPrice(parseCard(msg).amount) }}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">查看详情 →</div>
+                      </div>
+                    </div>
+                    <!-- Goods Card -->
+                    <div v-else-if="isCard(msg) && parseCard(msg)" class="rounded-2xl overflow-hidden shadow-sm"
                       :class="msg.senderId === userStore.user?.id ? 'rounded-br-md' : 'rounded-bl-md'"
                       style="width: 220px; cursor: pointer" @click="router.push('/goods/' + parseCard(msg).goodsId)">
                       <img :src="getImageUrl(parseCard(msg).coverImage) || ''" class="w-full h-32 object-cover" />
@@ -313,8 +371,8 @@ watch(connected, (val) => { if (val) loadConversations() })
                   </div>
                   <img v-if="msg.senderId === userStore.user?.id"
                     :src="getAvatarUrl(userStore.user?.avatar, 'original')" 
-                    class="w-7 h-7 rounded-full object-cover shrink-0"
-                  />
+                    class="w-7 h-7 rounded-full object-cover shrink-0 cursor-pointer hover:opacity-80"
+                    @click.stop="router.push('/profile')" />
                 </div>
               </div>
               <NEmpty v-else-if="!loadingMsgs" description="暂无消息，打个招呼吧" class="mt-20" />
@@ -325,6 +383,9 @@ watch(connected, (val) => { if (val) loadConversations() })
             <input ref="imgInput" type="file" accept="image/*" class="hidden" @change="handleImageUpload" />
             <NButton v-if="activeConv" quaternary circle title="发送商品卡片" @click="handleSendCard">
               <template #icon><NIcon size="20"><Gift24Filled /></NIcon></template>
+            </NButton>
+            <NButton v-if="activeConv" quaternary circle title="发送订单卡片" @click="handleSendOrderCard">
+              <template #icon><NIcon size="20"><Cart24Filled /></NIcon></template>
             </NButton>
             <NButton quaternary circle :loading="uploading" title="发送图片" @click="triggerImageUpload">
               <template #icon><NIcon size="20"><Image24Filled /></NIcon></template>

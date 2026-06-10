@@ -11,6 +11,7 @@ public class UserPublicVO {
     private String school;
     private BigDecimal creditScore;
     private String realName;
+    private String authTitle;
     private Integer goodsCount;
     private Integer followerCount;
     private Integer followingCount;

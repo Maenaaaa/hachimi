@@ -180,7 +180,8 @@ watch(() => route.query.userId, () => {
           <div class="flex-1 text-center sm:text-left">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
               <h2 class="text-xl font-bold dark:text-gray-100 text-gray-800">{{ displayUser?.nickname || '用户' }}</h2>
-              <NTag v-if="displayUser?.isVerified" size="small" type="success">已认证</NTag>
+              <NTag v-if="displayUser?.authTitle" size="small" type="success">{{ displayUser.authTitle }}</NTag>
+              <NTag v-else-if="displayUser?.isVerified" size="small" type="success">已认证</NTag>
             </div>
             <p class="text-sm text-gray-400">@{{ displayUser?.username }} · {{ displayUser?.school || '未设置学校' }}</p>
             <p class="text-sm text-gray-500 mt-1">信用分: {{ displayUser?.creditScore || 5.0 }}</p>

@@ -71,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
         notificationService.create(goods.getUserId(), "ORDER", "您有新的订单待确认",
                 "买家已下单购买「" + goods.getTitle() + "」", order.getId());
 
-        // 向卖家发送私信：商品卡片 + 我已下单
+        // 向卖家发送私信：订单卡片 + 我已下单
         try {
             Conversation conversation = conversationMapper.selectOne(
                     new LambdaQueryWrapper<Conversation>()
@@ -85,9 +85,12 @@ public class OrderServiceImpl implements OrderService {
                 conversation.setSellerId(goods.getUserId());
                 conversationMapper.insert(conversation);
             }
-            String card = "{\"type\":\"card\",\"goodsId\":" + goods.getId()
+            String card = "{\"type\":\"order\",\"orderId\":" + order.getId()
+                    + ",\"goodsId\":" + goods.getId()
                     + ",\"title\":\"" + goods.getTitle().replace("\"", "\\\"") + "\""
-                    + ",\"coverImage\":\"" + getFirstImage(goods.getId()) + "\"}";
+                    + ",\"coverImage\":\"" + getFirstImage(goods.getId()) + "\""
+                    + ",\"status\":\"" + order.getStatus() + "\""
+                    + ",\"amount\":" + order.getAmount() + "}";
             messageService.sendMessage(conversation.getId(), buyerId, card, "CARD");
             messageService.sendMessage(conversation.getId(), buyerId, "我已下单，请尽快确认", "TEXT");
         } catch (Exception e) {

@@ -9,6 +9,7 @@ export interface User {
   role: 'user' | 'admin'
   status: 'active' | 'disabled'
   verified: boolean
+  authTitle?: string
   createdAt: string
   updatedAt: string
 }
@@ -239,6 +240,23 @@ export interface PasswordForm {
   oldPassword: string
   newPassword: string
   confirmPassword: string
+}
+
+/** 认证审核记录 */
+export interface Verification {
+  id: number
+  authId: number
+  userId: number
+  nickname: string
+  username: string
+  avatar: string
+  realName: string
+  studentId: string
+  authTitle: string
+  verificationStatus: 'PENDING' | 'APPROVED' | 'REJECTED'
+  idCardImage: string
+  rejectReason: string
+  createTime: string
 }
 
 /** AI判决记录 */

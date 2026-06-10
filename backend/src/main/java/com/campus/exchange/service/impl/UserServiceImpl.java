@@ -56,6 +56,7 @@ public class UserServiceImpl implements UserService {
         vo.setFollowingCount(followMapper.selectCount(
                 new LambdaQueryWrapper<Follow>().eq(Follow::getFollowerId, userId)).intValue());
         vo.setIsVerified(user.getRealName() != null && !user.getRealName().isEmpty());
+        vo.setAuthTitle(user.getAuthTitle());
         return vo;
     }
 
@@ -71,6 +72,7 @@ public class UserServiceImpl implements UserService {
         vo.setSchool(user.getSchool());
         vo.setCreditScore(user.getCreditScore());
         vo.setRealName(user.getRealName());
+        vo.setAuthTitle(user.getAuthTitle());
         vo.setGoodsCount(goodsMapper.selectCount(
                 new LambdaQueryWrapper<Goods>().eq(Goods::getUserId, userId).eq(Goods::getStatus, "ACTIVE")).intValue());
         vo.setFollowerCount(followMapper.selectCount(
@@ -145,6 +147,7 @@ public class UserServiceImpl implements UserService {
         auth.setUserId(userId);
         auth.setRealName(dto.getRealName());
         auth.setStudentId(dto.getStudentId());
+        auth.setAuthTitle(dto.getAuthTitle());
         auth.setIdCardImage(imageUrl);
         auth.setStatus("PENDING");
         userAuthMapper.insert(auth);

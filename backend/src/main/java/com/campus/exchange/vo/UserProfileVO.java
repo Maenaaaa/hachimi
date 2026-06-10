@@ -20,4 +20,5 @@ public class UserProfileVO {
     private Integer followerCount;
     private Integer followingCount;
     private Boolean isVerified;
+    private String authTitle;
 }

@@ -22,6 +22,7 @@ public class User {
     private BigDecimal creditScore;
     private String realName;
     private String studentId;
+    private String authTitle;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

@@ -9,4 +9,6 @@ public class RealNameVerifyDTO {
     private String realName;
     @NotBlank(message = "学号不能为空")
     private String studentId;
+    @NotBlank(message = "认证称号不能为空")
+    private String authTitle;
 }

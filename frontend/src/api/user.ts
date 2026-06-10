@@ -8,6 +8,7 @@ export interface UserPublicVO {
   school: string
   creditScore: number
   realName?: string
+  authTitle?: string
   goodsCount?: number
   followerCount?: number
   followingCount?: number
@@ -33,6 +34,6 @@ export function uploadAvatar(formData: FormData) {
   return upload<string>('/user/avatar', formData)
 }
 
-export function verifyUser(data: { realName: string; idNumber: string }) {
-  return post<null>('/user/verify', data)
+export function verifyUser(formData: FormData) {
+  return upload<null>('/user/verify', formData)
 }

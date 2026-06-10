@@ -34,9 +34,8 @@ async function handleClick(n: any) {
   if (n.relatedId) {
     if (n.type === 'ORDER') router.push(`/order/${n.relatedId}`)
     else if (n.title === '收到新评价') router.push(`/review/${n.relatedId}`)
+    else if (n.title?.includes('实名认证')) { /* 认证通知不跳转 */ }
     else if (n.type === 'REVIEW') {
-      // 举报相关通知，relatedId 可能是商品ID或用户ID
-      // 尝试跳转到商品页，如果是用户举报则跳转到首页
       router.push(`/goods/${n.relatedId}`)
     }
     else if (n.title === '留言被回复' || n.title === '商品有新留言') router.push(`/goods/${n.relatedId}`)

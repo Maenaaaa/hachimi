@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class AdminUserVO {
     private Long id;
+    private Long authId;
     private String username;
     private String nickname;
     private String avatar;
@@ -17,6 +18,10 @@ public class AdminUserVO {
     private String status;
     private BigDecimal creditScore;
     private String realName;
+    private String studentId;
+    private String authTitle;
+    private String verificationStatus;
+    private String idCardImage;
     private Integer goodsCount;
     private Integer orderCount;
     private LocalDateTime createTime;

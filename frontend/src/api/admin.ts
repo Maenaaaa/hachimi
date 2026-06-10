@@ -1,5 +1,5 @@
 import { get, put, post, del } from '@/utils/request'
-import type { DashboardStats, User, Goods, Report, Announcement } from '@/types/entity'
+import type { DashboardStats, User, Goods, Report, Announcement, Verification } from '@/types/entity'
 import type { PageResult } from '@/types/api'
 
 export function getDashboardStats() {
@@ -67,7 +67,7 @@ export function deleteAnnouncement(id: number) {
 }
 
 export function getAdminVerifications(params: { page: number; size: number; status?: string }) {
-  return get<PageResult<User>>('/admin/verifications', params as Record<string, unknown>)
+  return get<PageResult<Verification>>('/admin/verifications', params as Record<string, unknown>)
 }
 
 export function approveVerification(id: number) {

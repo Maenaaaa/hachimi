@@ -432,10 +432,13 @@ function getCategoryColor(name: string) {
       <!-- 用户信息卡片 -->
       <div class="sidebar-card user-card">
         <template v-if="userStore.isLoggedIn">
-          <div class="user-info">
+          <div class="user-info cursor-pointer" @click="router.push('/profile')">
             <img :src="getAvatarUrl(userStore.user?.avatar, 'original')" class="user-avatar" />
             <div class="user-details">
-              <span class="user-name">{{ userStore.user?.nickname || '用户' }}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="user-name">{{ userStore.user?.nickname || '用户' }}</span>
+                <NTag v-if="userStore.user?.authTitle" size="tiny" type="success">{{ userStore.user.authTitle }}</NTag>
+              </div>
               <span class="user-school">{{ userStore.user?.school || '校园用户' }}</span>
             </div>
           </div>
@@ -1010,6 +1013,17 @@ function getCategoryColor(name: string) {
   align-items: center;
   gap: 14px;
   margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.user-card .user-info:hover {
+  background: #f1f5f9;
+}
+
+.dark .user-card .user-info:hover {
+  background: #374151;
 }
 
 .user-avatar {

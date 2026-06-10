@@ -155,6 +155,7 @@ public class AdminServiceImpl implements AdminService {
         if (user != null) {
             user.setRealName(auth.getRealName());
             user.setStudentId(auth.getStudentId());
+            user.setAuthTitle(auth.getAuthTitle());
             userMapper.updateById(user);
         }
         notificationService.create(auth.getUserId(), "REVIEW", "实名认证已通过", "您的实名认证已通过审核", authId);
@@ -181,8 +182,14 @@ public class AdminServiceImpl implements AdminService {
         userAuthMapper.selectPage(p, wrapper);
         List<AdminUserVO> records = p.getRecords().stream().map(auth -> {
             User user = userMapper.selectById(auth.getUserId());
-            if (user != null) return toAdminUserVO(user);
-            return null;
+            if (user == null) return null;
+            AdminUserVO vo = toAdminUserVO(user);
+            vo.setAuthId(auth.getId());
+            vo.setVerificationStatus(auth.getStatus());
+            vo.setStudentId(auth.getStudentId());
+            vo.setAuthTitle(auth.getAuthTitle());
+            vo.setIdCardImage(auth.getIdCardImage());
+            return vo;
         }).filter(vo -> vo != null).toList();
         return PageResult.of(records, p.getTotal(), page, size);
     }

@@ -12,6 +12,7 @@ public class UserAuth {
     private Long userId;
     private String realName;
     private String studentId;
+    private String authTitle;
     private String idCardImage;
     private String status;
     private String rejectReason;
