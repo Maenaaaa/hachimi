@@ -45,3 +45,7 @@ export function deleteGoods(id: number) {
 export function toggleGoodsStatus(id: number, status: string) {
   return put<null>(`/goods/${id}/status`, { status })
 }
+
+export function getHotSearches() {
+  return get<string[]>('/search/hot')
+}

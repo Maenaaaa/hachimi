@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getGoodsRecommend, getGoodsLatest } from '@/api/goods'
+import { getGoodsRecommend, getGoodsLatest, getHotSearches } from '@/api/goods'
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import { getCategories } from '@/api/category'
 import { getAnnouncements } from '@/api/announcement'
@@ -41,7 +41,7 @@ const banners = [
   { id: 3, image: 'https://picsum.photos/seed/banner3/1200/400', title: '校园集市', subtitle: '发现身边的好物' },
 ]
 
-const hotTags = ['教材', 'iPad', '自行车', '键盘', '显示器', '考研', '运动鞋', '相机']
+const hotTags = ref<string[]>(['教材', 'iPad', '自行车', '键盘', '显示器', '考研', '运动鞋', '相机'])
 
 const categories = ref<Category[]>([])
 const recommendGoods = ref<Goods[]>([])
@@ -100,16 +100,20 @@ watch(showAnnouncementModal, (val) => {
 
 onMounted(async () => {
   try {
-    const [catRes, recRes, latestRes, annRes] = await Promise.allSettled([
+    const [catRes, recRes, latestRes, annRes, hotRes] = await Promise.allSettled([
       getCategories(),
       getGoodsRecommend(),
       getGoodsLatest(),
       getAnnouncements(),
+      getHotSearches(),
     ])
 
     if (catRes.status === 'fulfilled') categories.value = catRes.value.data
-    if (recRes.status === 'fulfilled') recommendGoods.value = recRes.value.data
+    if (recRes.status === 'fulfilled') recommendGoods.value = (recRes.value.data || []).slice(0, 6)
     if (latestRes.status === 'fulfilled') latestGoods.value = latestRes.value.data
+    if (hotRes.status === 'fulfilled' && (hotRes.value.data || []).length > 0) {
+      hotTags.value = hotRes.value.data
+    }
     if (annRes.status === 'fulfilled') {
       allAnnouncements.value = (annRes.value.data as Announcement[]) || []
       const dismissed = getDismissedIds()
