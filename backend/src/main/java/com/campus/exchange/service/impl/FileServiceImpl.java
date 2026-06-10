@@ -52,7 +52,7 @@ public class FileServiceImpl implements FileService {
                 .contentType(file.getContentType())
                 .build());
 
-        return getUrl(objectName, bucket);
+        return bucket + "/" + objectName;
     }
 
     @Override

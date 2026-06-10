@@ -136,6 +136,8 @@ function formatLastMessage(message: any): string {
   if (/https?:\/\//.test(content) && /\.(jpg|jpeg|png|gif|webp)/i.test(content)) return '(图片)'
   // 如果是图片URL（MinIO地址）
   if (content.includes('http://192.') || content.includes('http://minio')) return '(图片)'
+  // 如果是相对路径格式的图片 (bucket/objectName)
+  if (/^(goods-images|chat-images|avatars|verification)\//.test(content)) return '(图片)'
   // 尝试解析 JSON 获取 title
   try {
     const parsed = JSON.parse(content)
