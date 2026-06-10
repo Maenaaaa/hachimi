@@ -266,8 +266,14 @@ public class MiMoGateway implements AiGateway {
 
             JsonNode node = objectMapper.readTree(jsonContent);
 
-            String verdictStr = node.get("verdict").asText();
-            AiVerdict verdict = AiVerdict.valueOf(verdictStr);
+            String verdictStr = node.get("verdict").asText().trim().toUpperCase();
+            AiVerdict verdict;
+            try {
+                verdict = AiVerdict.valueOf(verdictStr);
+            } catch (IllegalArgumentException e) {
+                log.warn("AI 返回未知判决值: {}, 默认转人工", verdictStr);
+                verdict = AiVerdict.ESCALATED;
+            }
 
             double confidence = node.get("confidence").asDouble();
             String reasoning = node.get("reasoning").asText();
