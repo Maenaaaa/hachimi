@@ -120,10 +120,12 @@ public class MiMoGateway implements AiGateway {
 
     private String extractObjectKey(String url) {
         try {
-            if (url.contains("/goods-images/")) {
-                return url.substring(url.indexOf("/goods-images/") + 14).split("\\?")[0];
-            } else if (url.contains("/avatars/")) {
-                return url.substring(url.indexOf("/avatars/") + 9).split("\\?")[0];
+            String path = url;
+            if (path.startsWith("/")) path = path.substring(1);
+            if (path.contains("goods-images/")) {
+                return path.substring(path.indexOf("goods-images/") + 13).split("\\?")[0];
+            } else if (path.contains("avatars/")) {
+                return path.substring(path.indexOf("avatars/") + 8).split("\\?")[0];
             }
             return null;
         } catch (Exception e) {
@@ -132,8 +134,12 @@ public class MiMoGateway implements AiGateway {
     }
 
     private String extractBucket(String url) {
-        if (url.contains("/goods-images/")) return "goods-images";
-        if (url.contains("/avatars/")) return "avatars";
+        String path = url;
+        if (path.startsWith("/")) path = path.substring(1);
+        if (path.contains("goods-images/")) return "goods-images";
+        if (path.contains("avatars/")) return "avatars";
+        if (path.contains("verification/")) return "verification";
+        if (path.contains("chat-images/")) return "chat-images";
         return "goods-images";
     }
 
