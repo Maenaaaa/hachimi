@@ -136,6 +136,14 @@ public class OrderServiceImpl implements OrderService {
             goodsMapper.updateById(goods);
         }
 
+        if (order.getExchangeGoodsId() != null) {
+            Goods exchangeGoods = goodsMapper.selectById(order.getExchangeGoodsId());
+            if (exchangeGoods != null) {
+                exchangeGoods.setStatus("ACTIVE");
+                goodsMapper.updateById(exchangeGoods);
+            }
+        }
+
         boolean isBuyer = order.getBuyerId().equals(userId);
         addLog(order.getId(), "CANCEL", userId, isBuyer ? "买家取消订单" : "卖家拒绝订单");
         Long notifyTarget = isBuyer ? order.getSellerId() : order.getBuyerId();
@@ -161,6 +169,14 @@ public class OrderServiceImpl implements OrderService {
         if (goods != null) {
             goods.setStatus("SOLD");
             goodsMapper.updateById(goods);
+        }
+
+        if (order.getExchangeGoodsId() != null) {
+            Goods exchangeGoods = goodsMapper.selectById(order.getExchangeGoodsId());
+            if (exchangeGoods != null) {
+                exchangeGoods.setStatus("SOLD");
+                goodsMapper.updateById(exchangeGoods);
+            }
         }
 
         addLog(order.getId(), "COMPLETE", buyerId, "买家确认完成");
@@ -220,6 +236,14 @@ public class OrderServiceImpl implements OrderService {
         if (goods != null) {
             goods.setStatus("ACTIVE");
             goodsMapper.updateById(goods);
+        }
+
+        if (order.getExchangeGoodsId() != null) {
+            Goods exchangeGoods = goodsMapper.selectById(order.getExchangeGoodsId());
+            if (exchangeGoods != null) {
+                exchangeGoods.setStatus("ACTIVE");
+                goodsMapper.updateById(exchangeGoods);
+            }
         }
 
         addLog(order.getId(), "CANCEL_APPROVE", userId, role + "同意取消");

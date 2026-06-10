@@ -113,11 +113,12 @@ public class PromptBuilder {
 
                 审核标准:
                 - 标题和描述是否包含违禁内容
-                - 价格是否合理（异常低价可能是诈骗）
                 - 图片内容是否合规、真实
                 - 是否为翻新/假冒商品特征
                 - 是否符合校园交易定位
-                """.formatted(title, description, price.toPlainString(), originalPrice.toPlainString(),
+                - 价格审核：如果转让价格为0元，需要结合交易类型判断。置换交易（tradeType=EXCHANGE）中价格为0是正常的（以物易物），不应因此拒绝。仅在出售交易（tradeType=SELL）中，0元或异常低价才需要警惕诈骗风险。
+                """.formatted(title, description, price.toPlainString(),
+                originalPrice != null && originalPrice.compareTo(BigDecimal.ZERO) > 0 ? originalPrice.toPlainString() : "未填写",
                 condition, categoryName, publisherCreditScore);
     }
 }

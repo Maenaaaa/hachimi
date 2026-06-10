@@ -175,6 +175,7 @@ export interface Report {
   id: number
   reporterId: number
   reporterNickname: string
+  reporterAvatar?: string
   type: string
   targetId: number
   reason: string

@@ -16,6 +16,7 @@ import com.campus.exchange.service.GoodsService;
 import com.campus.exchange.vo.GoodsCardVO;
 import com.campus.exchange.vo.GoodsDetailVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoodsServiceImpl implements GoodsService {
@@ -76,6 +78,7 @@ public class GoodsServiceImpl implements GoodsService {
             AiConfig config = configMapper.selectOne(
                     new LambdaQueryWrapper<AiConfig>().eq(AiConfig::getConfigKey, "goods_auto_review"));
             if (config != null && "false".equals(config.getConfigValue())) {
+                log.info("[AI审核] 商品{}跳过AI审核，goods_auto_review=false", goods.getId());
                 return;
             }
 
@@ -101,12 +104,14 @@ public class GoodsServiceImpl implements GoodsService {
                             .orderByAsc(GoodsImage::getSortOrder)
             ).stream().map(GoodsImage::getImageUrl).toList();
 
+            log.info("[AI审核] 触发商品审核: goodsId={}, 图片数={}", goods.getId(), imageUrls.size());
             aiJudgeService.judgeAsyncWithImages(AiJudgmentType.GOODS_REVIEW, goods.getId(), prompt, imageUrls);
 
             goods.setAiReviewStatus("PENDING");
             goodsMapper.updateById(goods);
+            log.info("[AI审核] 商品{}AI审核已提交，状态设为PENDING", goods.getId());
         } catch (Exception e) {
-            // AI 审核失败不影响商品发布
+            log.error("[AI审核] 商品{}触发AI审核失败", goods.getId(), e);
         }
     }
 

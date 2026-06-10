@@ -268,6 +268,14 @@ public class AiJudgeServiceImpl implements AiJudgeService {
                 goodsMapper.updateById(goods);
             }
 
+            if (order.getExchangeGoodsId() != null) {
+                Goods exchangeGoods = goodsMapper.selectById(order.getExchangeGoodsId());
+                if (exchangeGoods != null) {
+                    exchangeGoods.setStatus("ACTIVE");
+                    goodsMapper.updateById(exchangeGoods);
+                }
+            }
+
             // 通知双方
             notificationService.create(order.getBuyerId(), "DISPUTE", "仲裁结果：取消交易",
                     "AI仲裁已判定取消订单，" + judgment.getReasoning(), dispute.getOrderId());

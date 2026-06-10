@@ -2,7 +2,7 @@
 import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAdminReports, handleReport } from '@/api/admin'
-import { formatDate } from '@/utils'
+import { formatDate, getAvatarUrl } from '@/utils'
 import type { Report } from '@/types/entity'
 import {
   NCard,
@@ -100,11 +100,11 @@ const columns: DataTableColumn<Report>[] = [
     width: 120,
     render(row) {
       return h('div', { class: 'flex items-center gap-2' }, [
-        h(NAvatar, {
-          size: 24,
-          round: true,
-          style: { backgroundColor: '#3B82F6', fontSize: '12px' },
-        }, { default: () => row.reporterNickname?.charAt(0) || 'U' }),
+        h('img', {
+          src: getAvatarUrl(row.reporterAvatar, 'thumb_64'),
+          class: 'w-6 h-6 rounded-full object-cover',
+          onError: (e: Event) => { (e.target as HTMLImageElement).src = '/default-avatar.svg' },
+        }),
         h('span', { class: 'text-sm' }, row.reporterNickname || '未知用户'),
       ])
     },

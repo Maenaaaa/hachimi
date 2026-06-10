@@ -225,6 +225,14 @@ public class DisputeServiceImpl implements DisputeService {
                 goodsMapper.updateById(goods);
             }
 
+            if (order.getExchangeGoodsId() != null) {
+                Goods exchangeGoods = goodsMapper.selectById(order.getExchangeGoodsId());
+                if (exchangeGoods != null) {
+                    exchangeGoods.setStatus("ACTIVE");
+                    goodsMapper.updateById(exchangeGoods);
+                }
+            }
+
             notificationService.create(order.getBuyerId(), "DISPUTE", "仲裁结果：取消交易",
                     "管理员已判定取消订单，" + handleNote, dispute.getOrderId());
             notificationService.create(order.getSellerId(), "DISPUTE", "仲裁结果：取消交易",

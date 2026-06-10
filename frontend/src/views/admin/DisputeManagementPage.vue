@@ -2,7 +2,7 @@
 import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAdminDisputes, handleDispute } from '@/api/admin'
-import { formatDate } from '@/utils'
+import { formatDate, getAvatarUrl } from '@/utils'
 import {
   NCard, NButton, NSelect, NTag, NAvatar, NSpin, NDataTable,
   NSpace, NModal, NInput, useMessage, useDialog, NPagination,
@@ -71,8 +71,11 @@ const columns: DataTableColumn<any>[] = [
     title: '申请人', key: 'applicantNickname', width: 120,
     render(row) {
       return h('div', { class: 'flex items-center gap-2' }, [
-        h(NAvatar, { size: 24, round: true, style: { backgroundColor: '#3B82F6', fontSize: '12px' } },
-          { default: () => row.applicantNickname?.charAt(0) || 'U' }),
+        h('img', {
+          src: getAvatarUrl(row.applicantAvatar, 'thumb_64'),
+          class: 'w-6 h-6 rounded-full object-cover',
+          onError: (e: Event) => { (e.target as HTMLImageElement).src = '/default-avatar.svg' },
+        }),
         h('span', { class: 'text-sm' }, row.applicantNickname || '未知'),
       ])
     },

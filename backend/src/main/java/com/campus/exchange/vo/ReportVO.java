@@ -8,6 +8,7 @@ public class ReportVO {
     private Long id;
     private Long reporterId;
     private String reporterNickname;
+    private String reporterAvatar;
     private String type;
     private Long targetId;
     private String reason;

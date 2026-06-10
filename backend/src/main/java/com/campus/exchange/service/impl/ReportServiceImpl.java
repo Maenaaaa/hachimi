@@ -209,6 +209,7 @@ public class ReportServiceImpl implements ReportService {
         vo.setId(report.getId());
         vo.setReporterId(report.getReporterId());
         vo.setReporterNickname(reporter != null ? reporter.getNickname() : "");
+        vo.setReporterAvatar(reporter != null ? reporter.getAvatar() : "");
         vo.setType(report.getType());
         vo.setTargetId(report.getTargetId());
         vo.setReason(report.getReason());

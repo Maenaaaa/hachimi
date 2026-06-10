@@ -102,7 +102,7 @@ async function loadGoods() {
       uploadedFiles.value = g.images.map((url: string, i: number) => ({
         id: String(i),
         name: `image-${i}`,
-        url,
+        url: getImageUrl(url),
         status: 'finished' as const,
       }))
     }
