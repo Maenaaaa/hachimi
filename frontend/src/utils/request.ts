@@ -55,6 +55,54 @@ function addRefreshSubscriber(cb: (token: string) => void): void {
   refreshSubscribers.push(cb)
 }
 
+function isAuthUrl(url: string): boolean {
+  return url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')
+}
+
+function doRefreshToken(config: any): Promise<any> {
+  if (config._retry) return Promise.reject(new Error('登录已过期'))
+  config._retry = true
+
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) {
+    clearTokens()
+    window.location.href = '/login'
+    return Promise.reject(new Error('未登录'))
+  }
+
+  if (!isRefreshing) {
+    isRefreshing = true
+    return axios
+      .post<ApiResponse<{ accessToken: string; refreshToken: string }>>('/api/auth/refresh', { refreshToken })
+      .then((res) => {
+        const d = res.data.data
+        setTokens(d.accessToken, d.refreshToken)
+        isRefreshing = false
+        onRefreshed(d.accessToken)
+        if (config.headers) {
+          config.headers.Authorization = `Bearer ${d.accessToken}`
+        }
+        return request(config)
+      })
+      .catch(() => {
+        clearTokens()
+        isRefreshing = false
+        refreshSubscribers = []
+        window.location.href = '/login'
+        return Promise.reject(new Error('登录已过期'))
+      })
+  }
+
+  return new Promise((resolve) => {
+    addRefreshSubscriber((token: string) => {
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+      resolve(request(config))
+    })
+  })
+}
+
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getToken()
@@ -73,72 +121,24 @@ request.interceptors.response.use(
       return response
     }
     if (data.code === 401) {
-      // Don't intercept 401 for login/register — pass error to caller
       const url = response.config.url || ''
-      if (url.includes('/auth/login') || url.includes('/auth/register')) {
+      if (isAuthUrl(url)) {
         return Promise.reject(new Error(data.message || '用户名或密码错误'))
       }
-      // Account disabled — force logout immediately
       if (data.message && data.message.includes('禁用')) {
         clearTokens()
         alert(data.message)
         window.location.href = '/login'
         return Promise.reject(new Error(data.message))
       }
-      const originalRequest = response.config as InternalAxiosRequestConfig & { _retry?: boolean }
-      if (!originalRequest._retry) {
-        originalRequest._retry = true
-        const refreshToken = getRefreshToken()
-        if (!refreshToken) {
-          clearTokens()
-          window.location.href = '/login'
-          return Promise.reject(new Error(data.message || '未登录'))
-        }
-        if (!isRefreshing) {
-          isRefreshing = true
-          return axios
-            .post<ApiResponse<{ accessToken: string; refreshToken: string }>>('/api/auth/refresh', {
-              refreshToken,
-            })
-            .then((res) => {
-              const d = res.data.data
-              setTokens(d.accessToken, d.refreshToken)
-              isRefreshing = false
-              onRefreshed(d.accessToken)
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${d.accessToken}`
-              }
-              return request(originalRequest)
-            })
-            .catch(() => {
-              clearTokens()
-              isRefreshing = false
-              refreshSubscribers = []
-              window.location.href = '/login'
-              return Promise.reject(new Error('登录已过期'))
-            })
-        }
-        return new Promise((resolve) => {
-          addRefreshSubscriber((token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`
-            }
-            resolve(request(originalRequest))
-          })
-        })
-      }
+      return doRefreshToken(response.config)
     }
     return Promise.reject(new Error(data.message || '请求失败'))
   },
   (error) => {
-    if (error.response?.status === 401) {
-      const url = error.config?.url || ''
-      if (url.includes('/auth/login') || url.includes('/auth/register')) {
-        return Promise.reject(new Error(error.response?.data?.message || '用户名或密码错误'))
-      }
-      clearTokens()
-      alert(error.response?.data?.message || '登录已过期，请重新登录')
-      window.location.href = '/login'
+    const status = error.response?.status
+    if ((status === 401 || status === 403) && !isAuthUrl(error.config?.url || '')) {
+      return doRefreshToken(error.config)
     }
     return Promise.reject(error)
   },
