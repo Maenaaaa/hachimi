@@ -19,5 +19,6 @@ public interface GoodsService {
     List<GoodsCardVO> getLatestList(int page, int size, Long currentUserId);
     void recordView(Long goodsId, Long userId);
     List<GoodsCardVO> getMyGoods(Long userId, String status, int page, int size);
+    List<GoodsCardVO> getPublicUserGoods(Long userId, int page, int size);
     Page<GoodsCardVO> search(GoodsSearchDTO dto, int page, int size);
 }

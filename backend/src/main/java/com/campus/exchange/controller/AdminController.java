@@ -91,9 +91,10 @@ public class AdminController {
     }
 
     @GetMapping("/report")
-    public Result<PageResult<ReportVO>> getReports(@RequestParam(defaultValue = "1") int page,
+    public Result<PageResult<ReportVO>> getReports(@RequestParam(required = false) String status,
+                                              @RequestParam(defaultValue = "1") int page,
                                               @RequestParam(defaultValue = "20") int size) {
-        return Result.ok(reportService.getPendingReports(page, size));
+        return Result.ok(reportService.listReports(status, page, size));
     }
 
     @GetMapping("/report/{id}")

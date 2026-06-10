@@ -24,6 +24,9 @@ public interface GoodsMapper extends BaseMapper<Goods> {
     List<GoodsCardVO> selectMyGoods(@Param("userId") Long userId, @Param("status") String status,
                                      @Param("offset") long offset, @Param("size") long size);
 
+    List<GoodsCardVO> selectPublicUserGoods(@Param("userId") Long userId,
+                                            @Param("offset") long offset, @Param("size") long size);
+
     List<GoodsCardVO> selectFavoriteGoods(@Param("userId") Long userId,
                                            @Param("offset") long offset, @Param("size") long size);
 

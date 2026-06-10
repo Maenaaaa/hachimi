@@ -42,6 +42,7 @@ const statusOptions = [
   { label: '待处理', value: 'PENDING' },
   { label: '已处理', value: 'APPROVED' },
   { label: '已驳回', value: 'REJECTED' },
+  { label: '转人工', value: 'ESCALATED' },
 ]
 
 const reasonLabels: Record<string, string> = {
@@ -145,11 +146,13 @@ const columns: DataTableColumn<Report>[] = [
         PENDING: 'warning',
         APPROVED: 'success',
         REJECTED: 'default',
+        ESCALATED: 'warning',
       }
       const labelMap: Record<string, string> = {
         PENDING: '待处理',
         APPROVED: '已处理',
         REJECTED: '已驳回',
+        ESCALATED: '转人工',
       }
       return h(NTag, { type: statusMap[row.status] || 'default', size: 'small' }, {
         default: () => labelMap[row.status] || row.status,
@@ -170,7 +173,7 @@ const columns: DataTableColumn<Report>[] = [
     width: 180,
     render(row) {
       const buttons = []
-      if (row.status === 'PENDING') {
+      if (row.status === 'PENDING' || row.status === 'ESCALATED') {
         buttons.push(
           h(NButton, { size: 'tiny', type: 'success' as const, onClick: () => openHandleModal(row.id, 'APPROVED') }, { default: () => '处理' }),
           h(NButton, { size: 'tiny', type: 'error' as const, onClick: () => openHandleModal(row.id, 'REJECTED') }, { default: () => '驳回' }),

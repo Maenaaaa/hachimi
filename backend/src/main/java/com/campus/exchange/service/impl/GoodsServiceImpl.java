@@ -278,6 +278,11 @@ public class GoodsServiceImpl implements GoodsService {
     }
 
     @Override
+    public List<GoodsCardVO> getPublicUserGoods(Long userId, int page, int size) {
+        return goodsMapper.selectPublicUserGoods(userId, (long) (page - 1) * size, size);
+    }
+
+    @Override
     public Page<GoodsCardVO> search(GoodsSearchDTO dto, int page, int size) {
         Page<GoodsCardVO> p = new Page<>(page, size);
         return goodsMapper.searchGoods(p, dto);

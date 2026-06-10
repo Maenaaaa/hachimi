@@ -46,6 +46,7 @@ const statusOptions = [
   { label: '已下架', value: 'INACTIVE' },
   { label: '未通过', value: 'REJECTED' },
   { label: '强制下架', value: 'TAKEN_DOWN' },
+  { label: '终审驳回', value: 'FINAL_REJECTED' },
 ]
 
 async function loadGoods() {
@@ -203,6 +204,7 @@ const columns: DataTableColumn<any>[] = [
         INACTIVE: 'default',
         REJECTED: 'error',
         TAKEN_DOWN: 'default',
+        FINAL_REJECTED: 'error',
       }
       return h(NTag, { type: typeMap[row.status] || 'default', size: 'small' }, {
         default: () => GOODS_STATUS[row.status] || row.status,
@@ -238,7 +240,7 @@ const columns: DataTableColumn<any>[] = [
           ],
         })
       }
-      if (row.status === 'INACTIVE' || row.status === 'REJECTED' || row.status === 'TAKEN_DOWN') {
+      if (row.status === 'INACTIVE' || row.status === 'REJECTED' || row.status === 'TAKEN_DOWN' || row.status === 'FINAL_REJECTED') {
         return h(NButton, { size: 'tiny', type: 'error' as const, onClick: () => handleDelete(row.id) }, { default: () => '删除' })
       }
       return h('span', { class: 'text-xs text-gray-400' }, '--')

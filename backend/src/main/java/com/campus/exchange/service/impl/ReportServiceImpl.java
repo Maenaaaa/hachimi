@@ -159,6 +159,19 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    public PageResult<ReportVO> listReports(String status, int page, int size) {
+        Page<Report> p = new Page<>(page, size);
+        LambdaQueryWrapper<Report> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Report::getStatus, status);
+        }
+        wrapper.orderByDesc(Report::getCreateTime);
+        reportMapper.selectPage(p, wrapper);
+        List<ReportVO> records = p.getRecords().stream().map(this::toVO).toList();
+        return PageResult.of(records, p.getTotal(), page, size);
+    }
+
+    @Override
     public ReportVO getById(Long reportId) {
         Report report = reportMapper.selectById(reportId);
         if (report == null) throw new BusinessException("举报不存在");

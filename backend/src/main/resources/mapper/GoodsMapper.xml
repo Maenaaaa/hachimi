@@ -75,6 +75,16 @@
         LIMIT #{offset}, #{size}
     </select>
 
+    <select id="selectPublicUserGoods" resultType="com.campus.exchange.vo.GoodsCardVO">
+        SELECT <include refid="goodsCardColumns"/>
+        FROM goods g
+        LEFT JOIN user u ON g.user_id = u.id
+        WHERE g.deleted = 0 AND g.user_id = #{userId}
+        AND g.status IN ('ACTIVE', 'INACTIVE')
+        ORDER BY g.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
     <select id="selectFavoriteGoods" resultType="com.campus.exchange.vo.GoodsCardVO">
         SELECT <include refid="goodsCardColumns"/>
         FROM favorite f

@@ -10,6 +10,7 @@ public interface ReportService {
     void create(Long reporterId, CreateReportDTO dto);
     List<ReportVO> getMyReports(Long userId, int page, int size);
     PageResult<ReportVO> getPendingReports(int page, int size);
+    PageResult<ReportVO> listReports(String status, int page, int size);
     ReportVO getById(Long reportId);
     void handle(Long reportId, Long handlerId, HandleReportDTO dto);
 }

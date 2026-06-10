@@ -84,6 +84,6 @@ public class GoodsController {
     public Result<List<GoodsCardVO>> getUserGoods(@PathVariable Long userId,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "50") int size) {
-        return Result.ok(goodsService.getMyGoods(userId, null, page, size));
+        return Result.ok(goodsService.getPublicUserGoods(userId, page, size));
     }
 }
