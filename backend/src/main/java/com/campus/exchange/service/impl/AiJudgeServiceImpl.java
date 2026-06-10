@@ -366,6 +366,15 @@ public class AiJudgeServiceImpl implements AiJudgeService {
                     notificationService.create(dispute.getApplicantId(), "DISPUTE", "仲裁处理进度",
                             "您的仲裁申请已收到，AI无法自动判决，正在等待管理员审核", goodsId);
                 }
+            } else if (type == AiJudgmentType.GOODS_REVIEW) {
+                Goods goods = goodsMapper.selectById(sourceId);
+                if (goods != null) {
+                    goods.setAiReviewStatus("ESCALATED");
+                    goodsMapper.updateById(goods);
+                    notificationService.create(goods.getUserId(), "REVIEW", "商品审核中",
+                            "AI审核暂时不可用，您的商品正在等待人工审核", goods.getId());
+                    log.info("商品AI审核转人工: goodsId={}, 原因={}", goods.getId(), judgment.getReasoning());
+                }
             }
         } catch (Exception e) {
             log.error("通知举报人失败", e);
