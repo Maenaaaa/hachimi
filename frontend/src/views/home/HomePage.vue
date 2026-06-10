@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getGoodsRecommend, getGoodsLatest } from '@/api/goods'
+import { addFavorite, removeFavorite } from '@/api/favorite'
 import { getCategories } from '@/api/category'
 import { getAnnouncements } from '@/api/announcement'
 import { formatPrice, formatDate, getImageUrl, getAvatarUrl } from '@/utils'
@@ -151,7 +152,29 @@ function goToSearch(keyword: string) {
 
 function toggleFavorite(goods: Goods, event: Event) {
   event.stopPropagation()
-  message.info('收藏功能开发中')
+  if (!userStore.isLoggedIn) {
+    message.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
+  if ((goods as any).isFavorited) {
+    removeFavorite(goods.id)
+      .then(() => {
+        (goods as any).isFavorited = false
+        goods.favoriteCount--
+        message.success('已取消收藏')
+      })
+      .catch(() => message.error('操作失败'))
+  } else {
+    addFavorite(goods.id)
+      .then(() => {
+        (goods as any).isFavorited = true
+        goods.favoriteCount++
+        message.success('已收藏')
+      })
+      .catch(() => message.error('操作失败'))
+  }
 }
 
 const selectedAnnouncement = ref<Announcement | null>(null)
@@ -290,14 +313,17 @@ function getCategoryColor(name: string) {
                   loading="lazy"
                   @error="(e: Event) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/goods/300/200' }"
                 />
-                <div class="goods-actions">
+                <div v-if="(goods as any).sellerId !== userStore.user?.id" class="goods-actions">
                   <NTooltip trigger="hover">
                     <template #trigger>
                       <button class="action-btn" @click="toggleFavorite(goods, $event)">
-                        <NIcon :size="16"><Heart24Regular /></NIcon>
+                        <NIcon :size="16">
+                          <Heart24Filled v-if="(goods as any).isFavorited" style="color: #EF4444" />
+                          <Heart24Regular v-else />
+                        </NIcon>
                       </button>
                     </template>
-                    收藏
+                    {{ (goods as any).isFavorited ? '取消收藏' : '收藏' }}
                   </NTooltip>
                 </div>
                 <NTag
@@ -355,21 +381,24 @@ function getCategoryColor(name: string) {
                   loading="lazy"
                   @error="(e: Event) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/goods2/300/200' }"
                 />
-                <div class="goods-actions">
+                <div v-if="(goods as any).sellerId !== userStore.user?.id" class="goods-actions">
                   <NTooltip trigger="hover">
                     <template #trigger>
                       <button class="action-btn" @click="toggleFavorite(goods, $event)">
-                        <NIcon :size="16"><Heart24Regular /></NIcon>
+                        <NIcon :size="16">
+                          <Heart24Filled v-if="(goods as any).isFavorited" style="color: #EF4444" />
+                          <Heart24Regular v-else />
+                        </NIcon>
                       </button>
                     </template>
-                    收藏
+                    {{ (goods as any).isFavorited ? '取消收藏' : '收藏' }}
                   </NTooltip>
                 </div>
                 <NTag
                   v-if="goods.condition"
                   size="tiny"
                   class="goods-condition-tag"
-                  :color="{ textColor: '#fff', borderColor: '#10B981', color: '#10B981' }"
+                  :color="{ textColor: '#fff', borderColor: '#3B82F6', color: '#3B82F6' }"
                 >
                   {{ goods.condition === 'new' ? '全新' : goods.condition === 'like_new' ? '几乎全新' : goods.condition === 'good' ? '良好' : '一般' }}
                 </NTag>

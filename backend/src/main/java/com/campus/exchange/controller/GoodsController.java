@@ -52,14 +52,18 @@ public class GoodsController {
 
     @GetMapping("/recommend")
     public Result<List<GoodsCardVO>> getRecommendList(@RequestParam(defaultValue = "1") int page,
-                                                       @RequestParam(defaultValue = "20") int size) {
-        return Result.ok(goodsService.getRecommendList(page, size));
+                                                       @RequestParam(defaultValue = "20") int size,
+                                                       @CurrentUser User user) {
+        Long currentUserId = user != null ? user.getId() : null;
+        return Result.ok(goodsService.getRecommendList(page, size, currentUserId));
     }
 
     @GetMapping("/latest")
     public Result<List<GoodsCardVO>> getLatestList(@RequestParam(defaultValue = "1") int page,
-                                                    @RequestParam(defaultValue = "20") int size) {
-        return Result.ok(goodsService.getLatestList(page, size));
+                                                    @RequestParam(defaultValue = "20") int size,
+                                                    @CurrentUser User user) {
+        Long currentUserId = user != null ? user.getId() : null;
+        return Result.ok(goodsService.getLatestList(page, size, currentUserId));
     }
 
     @PostMapping("/{id}/view")

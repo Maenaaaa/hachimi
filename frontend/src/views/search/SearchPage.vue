@@ -25,12 +25,14 @@ const router = useRouter()
 const route = useRoute()
 const message = useMessage()
 
+let syncingFromUrl = false
+
 const keyword = ref((route.query.keyword as string) || '')
 const categoryId = ref<number | null>(route.query.categoryId ? Number(route.query.categoryId) : null)
-const condition = ref<string | null>(null)
-const minPrice = ref<number | null>(null)
-const maxPrice = ref<number | null>(null)
-const sortBy = ref<string>('latest')
+const condition = ref<string | null>(route.query.condition ? String(route.query.condition) : null)
+const minPrice = ref<number | null>(route.query.minPrice ? Number(route.query.minPrice) : null)
+const maxPrice = ref<number | null>(route.query.maxPrice ? Number(route.query.maxPrice) : null)
+const sortBy = ref<string>((route.query.sortBy as string) || 'latest')
 
 const categories = ref<Category[]>([])
 const goodsList = ref<any[]>([])
@@ -93,6 +95,15 @@ async function doSearch() {
 
 function handleSearch() {
   page.value = 1
+  const query: Record<string, string> = {}
+  if (keyword.value.trim()) query.keyword = keyword.value.trim()
+  if (categoryId.value) query.categoryId = String(categoryId.value)
+  if (condition.value) query.condition = condition.value
+  if (minPrice.value != null) query.minPrice = String(minPrice.value)
+  if (maxPrice.value != null) query.maxPrice = String(maxPrice.value)
+  if (sortBy.value !== 'latest') query.sortBy = sortBy.value
+  syncingFromUrl = true
+  router.replace({ query })
   doSearch()
 }
 
@@ -100,7 +111,34 @@ function goToGoods(id: number) {
   router.push(`/goods/${id}`)
 }
 
+function handlePriceSearch() {
+  if (minPrice.value != null && maxPrice.value != null && minPrice.value > maxPrice.value) {
+    message.warning('最低价不能高于最高价')
+    const tmp = minPrice.value
+    minPrice.value = maxPrice.value
+    maxPrice.value = tmp
+  }
+  if (minPrice.value != null && minPrice.value < 0) minPrice.value = null
+  if (maxPrice.value != null && maxPrice.value < 0) maxPrice.value = null
+  handleSearch()
+}
+
 watch(page, () => doSearch())
+
+watch(() => route.query, (q) => {
+  if (syncingFromUrl) {
+    syncingFromUrl = false
+    return
+  }
+  keyword.value = (q.keyword as string) || ''
+  categoryId.value = q.categoryId ? Number(q.categoryId) : null
+  condition.value = q.condition ? String(q.condition) : null
+  minPrice.value = q.minPrice ? Number(q.minPrice) : null
+  maxPrice.value = q.maxPrice ? Number(q.maxPrice) : null
+  sortBy.value = (q.sortBy as string) || 'latest'
+  page.value = 1
+  doSearch()
+})
 
 onMounted(() => {
   loadCategories()
@@ -147,14 +185,14 @@ onMounted(() => {
           <span class="text-sm text-gray-500">价格：</span>
           <NInput :value="minPrice !== null ? String(minPrice) : ''" placeholder="最低价"
             style="width: 100px" size="small"
-            :input-props="{ inputmode: 'decimal', pattern: '[0-9]*\\.?[0-9]{0,2}' }"
-            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); minPrice = n ? Number(parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n) || null : null }" />
+            :input-props="{ inputmode: 'decimal' }"
+            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); const cleaned = parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n; minPrice = cleaned !== '' && cleaned !== '.' ? Number(cleaned) : null }" />
           <span class="text-gray-400">-</span>
           <NInput :value="maxPrice !== null ? String(maxPrice) : ''" placeholder="最高价"
             style="width: 100px" size="small"
-            :input-props="{ inputmode: 'decimal', pattern: '[0-9]*\\.?[0-9]{0,2}' }"
-            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); maxPrice = n ? Number(parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n) || null : null }" />
-          <NButton size="small" @click="handleSearch">确定</NButton>
+            :input-props="{ inputmode: 'decimal' }"
+            @update:value="(v: string) => { const n = v.replace(/[^0-9.]/g, ''); const parts = n.split('.'); const cleaned = parts.length > 1 ? parts[0] + '.' + parts[1].slice(0, 2) : n; maxPrice = cleaned !== '' && cleaned !== '.' ? Number(cleaned) : null }" />
+          <NButton size="small" @click="handlePriceSearch">确定</NButton>
         </div>
 
         <div class="flex items-center gap-4">

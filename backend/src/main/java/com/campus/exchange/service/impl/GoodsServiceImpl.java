@@ -237,13 +237,13 @@ public class GoodsServiceImpl implements GoodsService {
     }
 
     @Override
-    public List<GoodsCardVO> getRecommendList(int page, int size) {
-        return goodsMapper.selectRecommendList((long) (page - 1) * size, size);
+    public List<GoodsCardVO> getRecommendList(int page, int size, Long currentUserId) {
+        return goodsMapper.selectRecommendList((long) (page - 1) * size, size, currentUserId);
     }
 
     @Override
-    public List<GoodsCardVO> getLatestList(int page, int size) {
-        return goodsMapper.selectLatestList((long) (page - 1) * size, size);
+    public List<GoodsCardVO> getLatestList(int page, int size, Long currentUserId) {
+        return goodsMapper.selectLatestList((long) (page - 1) * size, size, currentUserId);
     }
 
     @Override

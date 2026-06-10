@@ -15,8 +15,8 @@ public interface GoodsService {
     void delete(Long goodsId, Long userId);
     void toggleStatus(Long goodsId, Long userId, String status);
     GoodsDetailVO getDetail(Long goodsId, Long currentUserId);
-    List<GoodsCardVO> getRecommendList(int page, int size);
-    List<GoodsCardVO> getLatestList(int page, int size);
+    List<GoodsCardVO> getRecommendList(int page, int size, Long currentUserId);
+    List<GoodsCardVO> getLatestList(int page, int size, Long currentUserId);
     void recordView(Long goodsId, Long userId);
     List<GoodsCardVO> getMyGoods(Long userId, String status, int page, int size);
     Page<GoodsCardVO> search(GoodsSearchDTO dto, int page, int size);

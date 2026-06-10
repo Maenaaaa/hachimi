@@ -42,18 +42,22 @@
     </select>
 
     <select id="selectRecommendList" resultType="com.campus.exchange.vo.GoodsCardVO">
-        SELECT <include refid="goodsCardColumns"/>
+        SELECT <include refid="goodsCardColumns"/>,
+            (f.id IS NOT NULL) AS isFavorited
         FROM goods g
         LEFT JOIN user u ON g.user_id = u.id
+        LEFT JOIN favorite f ON f.goods_id = g.id AND f.user_id = #{userId}
         WHERE g.deleted = 0 AND g.status = 'ACTIVE'
         ORDER BY (LN(g.view_count + 1) * 0.4 + LN(g.favorite_count + 1) * 0.6) DESC, g.create_time DESC
         LIMIT #{offset}, #{size}
     </select>
 
     <select id="selectLatestList" resultType="com.campus.exchange.vo.GoodsCardVO">
-        SELECT <include refid="goodsCardColumns"/>
+        SELECT <include refid="goodsCardColumns"/>,
+            (f.id IS NOT NULL) AS isFavorited
         FROM goods g
         LEFT JOIN user u ON g.user_id = u.id
+        LEFT JOIN favorite f ON f.goods_id = g.id AND f.user_id = #{userId}
         WHERE g.deleted = 0 AND g.status = 'ACTIVE'
         ORDER BY g.create_time DESC
         LIMIT #{offset}, #{size}

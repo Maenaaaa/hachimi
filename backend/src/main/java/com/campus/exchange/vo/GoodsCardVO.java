@@ -20,4 +20,5 @@ public class GoodsCardVO {
     private String sellerNickname;
     private String sellerAvatar;
     private String coverImage;
+    private Boolean isFavorited;
 }

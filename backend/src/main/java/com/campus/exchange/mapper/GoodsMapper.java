@@ -15,9 +15,11 @@ public interface GoodsMapper extends BaseMapper<Goods> {
 
     Page<GoodsCardVO> searchGoods(Page<GoodsCardVO> page, @Param("dto") GoodsSearchDTO dto);
 
-    List<GoodsCardVO> selectRecommendList(@Param("offset") long offset, @Param("size") long size);
+    List<GoodsCardVO> selectRecommendList(@Param("offset") long offset, @Param("size") long size,
+                                          @Param("userId") Long userId);
 
-    List<GoodsCardVO> selectLatestList(@Param("offset") long offset, @Param("size") long size);
+    List<GoodsCardVO> selectLatestList(@Param("offset") long offset, @Param("size") long size,
+                                        @Param("userId") Long userId);
 
     List<GoodsCardVO> selectMyGoods(@Param("userId") Long userId, @Param("status") String status,
                                      @Param("offset") long offset, @Param("size") long size);
