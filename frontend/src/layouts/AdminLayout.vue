@@ -10,7 +10,6 @@ import {
   NLayout,
   NLayoutHeader,
   NLayoutSider,
-  NLayoutContent,
   NMenu,
   NButton,
   NAvatar,
@@ -120,7 +119,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <NLayout class="min-h-screen page-bg" has-sider>
+  <NLayout class="admin-layout" has-sider>
     <NLayoutSider
       bordered
       collapse-mode="width"
@@ -130,7 +129,7 @@ onUnmounted(() => {
       show-trigger
       @collapse="collapsed = true"
       @expand="collapsed = false"
-      class="dark:bg-gray-800 bg-white"
+      class="admin-sider dark:bg-gray-800 bg-white"
     >
       <div class="flex items-center justify-center h-16 border-b dark:border-gray-700 border-gray-100">
         <div v-if="!collapsed" class="text-lg font-bold text-[#3B82F6]">管理后台</div>
@@ -145,7 +144,7 @@ onUnmounted(() => {
       />
     </NLayoutSider>
 
-    <NLayout>
+    <NLayout class="admin-main">
       <NLayoutHeader bordered class="layout-header h-16 flex items-center px-4 justify-end">
         <div class="header-right">
           <NButton quaternary circle @click="appStore.toggleTheme()">
@@ -184,16 +183,32 @@ onUnmounted(() => {
         </div>
       </NLayoutHeader>
 
-      <NLayoutContent class="p-6 page-bg" style="min-height: calc(100vh - 64px)">
+      <div class="admin-content p-6 page-bg">
         <router-view />
-      </NLayoutContent>
+      </div>
     </NLayout>
   </NLayout>
 </template>
 
 <style scoped>
-.min-h-screen {
-  min-height: 100vh;
+.admin-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-sider {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-main {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-content {
+  height: calc(100vh - 64px);
+  overflow-y: auto;
 }
 
 /* Header Right */
