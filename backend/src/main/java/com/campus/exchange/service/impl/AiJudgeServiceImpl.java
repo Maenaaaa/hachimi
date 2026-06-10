@@ -60,7 +60,17 @@ public class AiJudgeServiceImpl implements AiJudgeService {
     @Transactional
     public AiJudgment judge(AiJudgmentType type, Long sourceId, String prompt) {
         double autoThreshold = getDoubleConfig("confidence_auto_threshold", 0.8);
-        double escalateThreshold = getDoubleConfig("confidence_escalate_threshold", 0.5);
+
+        AiJudgmentRecord record = new AiJudgmentRecord();
+        record.setSourceType(type.name());
+        record.setSourceId(sourceId);
+        record.setAiModel("mimo-v2.5-pro");
+        record.setConfidence(0.0);
+        record.setVerdict("PENDING");
+        record.setReasoning("AI 审核中...");
+        record.setEvidence("[]");
+        record.setStatus("PROCESSING");
+        judgmentMapper.insert(record);
 
         AiJudgment judgment;
         try {
@@ -75,10 +85,6 @@ public class AiJudgeServiceImpl implements AiJudgeService {
                     .build();
         }
 
-        AiJudgmentRecord record = new AiJudgmentRecord();
-        record.setSourceType(type.name());
-        record.setSourceId(sourceId);
-        record.setAiModel("mimo-v2.5-pro");
         record.setConfidence(judgment.getConfidence());
         record.setVerdict(judgment.getVerdict().name());
         record.setReasoning(judgment.getReasoning());
@@ -87,16 +93,16 @@ public class AiJudgeServiceImpl implements AiJudgeService {
         } catch (JsonProcessingException e) {
             record.setEvidence("[]");
         }
-        record.setStatus("PENDING");
 
         if (judgment.getConfidence() >= autoThreshold && judgment.getVerdict() != AiVerdict.ESCALATED) {
             record.setAutoHandled(true);
-            judgmentMapper.insert(record);
+            record.setStatus("PENDING");
+            judgmentMapper.updateById(record);
             executeVerdictInternal(record, type, sourceId, judgment);
         } else {
             record.setAutoHandled(false);
             record.setStatus("ESCALATED");
-            judgmentMapper.insert(record);
+            judgmentMapper.updateById(record);
             notifyAdminForReview(type, sourceId, record.getId(), judgment);
             notifyReporterOfEscalation(type, sourceId, record.getId(), judgment);
         }
@@ -114,7 +120,17 @@ public class AiJudgeServiceImpl implements AiJudgeService {
     @Transactional
     public AiJudgment judgeWithImages(AiJudgmentType type, Long sourceId, String prompt, List<String> imageUrls) {
         double autoThreshold = getDoubleConfig("confidence_auto_threshold", 0.8);
-        double escalateThreshold = getDoubleConfig("confidence_escalate_threshold", 0.5);
+
+        AiJudgmentRecord record = new AiJudgmentRecord();
+        record.setSourceType(type.name());
+        record.setSourceId(sourceId);
+        record.setAiModel("mimo-v2.5-pro");
+        record.setConfidence(0.0);
+        record.setVerdict("PENDING");
+        record.setReasoning("AI 审核中...");
+        record.setEvidence("[]");
+        record.setStatus("PROCESSING");
+        judgmentMapper.insert(record);
 
         AiJudgment judgment;
         try {
@@ -129,10 +145,6 @@ public class AiJudgeServiceImpl implements AiJudgeService {
                     .build();
         }
 
-        AiJudgmentRecord record = new AiJudgmentRecord();
-        record.setSourceType(type.name());
-        record.setSourceId(sourceId);
-        record.setAiModel("mimo-v2.5-pro");
         record.setConfidence(judgment.getConfidence());
         record.setVerdict(judgment.getVerdict().name());
         record.setReasoning(judgment.getReasoning());
@@ -141,16 +153,16 @@ public class AiJudgeServiceImpl implements AiJudgeService {
         } catch (JsonProcessingException e) {
             record.setEvidence("[]");
         }
-        record.setStatus("PENDING");
 
         if (judgment.getConfidence() >= autoThreshold && judgment.getVerdict() != AiVerdict.ESCALATED) {
             record.setAutoHandled(true);
-            judgmentMapper.insert(record);
+            record.setStatus("PENDING");
+            judgmentMapper.updateById(record);
             executeVerdictInternal(record, type, sourceId, judgment);
         } else {
             record.setAutoHandled(false);
             record.setStatus("ESCALATED");
-            judgmentMapper.insert(record);
+            judgmentMapper.updateById(record);
             notifyAdminForReview(type, sourceId, record.getId(), judgment);
             notifyReporterOfEscalation(type, sourceId, record.getId(), judgment);
         }

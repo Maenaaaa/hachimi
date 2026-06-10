@@ -37,6 +37,7 @@ const sourceTypeOptions = [
 
 const statusOptions = [
   { label: '全部', value: '' },
+  { label: '审核中', value: 'PROCESSING' },
   { label: '待处理', value: 'PENDING' },
   { label: '已处理', value: 'PROCESSED' },
   { label: '已上诉', value: 'APPEALED' },
@@ -52,12 +53,14 @@ const sourceTypeMap: Record<string, string> = {
 }
 
 const verdictMap: Record<string, string> = {
+  PENDING: '审核中',
   APPROVED: '通过',
   REJECTED: '拒绝',
   ESCALATED: '转人工',
 }
 
 const statusMap: Record<string, string> = {
+  PROCESSING: '审核中',
   PENDING: '待处理',
   PROCESSED: '已处理',
   APPEALED: '已上诉',
@@ -73,12 +76,14 @@ const sourceTypeTagType: Record<string, 'success' | 'warning' | 'error' | 'info'
 }
 
 const verdictTagType: Record<string, 'success' | 'error' | 'warning' | 'info'> = {
+  PENDING: 'info',
   APPROVED: 'success',
   REJECTED: 'error',
   ESCALATED: 'warning',
 }
 
 const statusTagType: Record<string, 'success' | 'error' | 'warning' | 'info'> = {
+  PROCESSING: 'info',
   PENDING: 'info',
   PROCESSED: 'success',
   APPEALED: 'warning',
@@ -114,6 +119,7 @@ const columns = [
   {
     title: '置信度', key: 'confidence', width: 80,
     render(row: AiJudgmentRecord) {
+      if (row.status === 'PROCESSING') return h('span', { style: { color: '#999' } }, '-')
       const pct = Math.round(row.confidence * 100)
       const color = pct >= 80 ? '#18a058' : pct >= 50 ? '#f0a020' : '#d03050'
       return h('span', { style: { color, fontWeight: 'bold' } }, `${pct}%`)
@@ -128,6 +134,7 @@ const columns = [
   {
     title: '自动处理', key: 'autoHandled', width: 80,
     render(row: AiJudgmentRecord) {
+      if (row.status === 'PROCESSING') return h('span', { style: { color: '#999' } }, '-')
       return h(NTag, { type: row.autoHandled ? 'success' : 'info', size: 'small' }, { default: () => row.autoHandled ? '是' : '否' })
     }
   },
