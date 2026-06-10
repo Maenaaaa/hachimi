@@ -153,7 +153,7 @@ const columns: DataTableColumn<any>[] = [
     render(row) {
       return h('div', {
         class: 'flex items-center gap-3 cursor-pointer hover:text-[#3B82F6]',
-        onClick: () => window.open(`/goods/${row.id}`, '_blank'),
+        onClick: () => router.push(`/goods/${row.id}`),
       }, [
         h('img', { src: getImageUrl(row.coverImage) || '', class: 'w-12 h-12 object-cover rounded-lg' }),
         h('div', null, [

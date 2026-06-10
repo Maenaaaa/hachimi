@@ -181,7 +181,7 @@ const columns: DataTableColumn<Report>[] = [
       }
       if (row.type === 'GOODS' && row.targetId) {
         buttons.push(
-          h(NButton, { size: 'tiny', text: true, type: 'primary' as const, onClick: () => { window.open(`/goods/${row.targetId}`, '_blank') } }, { default: () => '查看商品' }),
+          h(NButton, { size: 'tiny', text: true, type: 'primary' as const, onClick: () => router.push(`/goods/${row.targetId}`) }, { default: () => '查看商品' }),
         )
       }
       if (buttons.length === 0) {
