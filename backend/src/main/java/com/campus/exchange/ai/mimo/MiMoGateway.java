@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
 import java.io.InputStream;
 import java.util.*;
 
@@ -38,6 +40,33 @@ public class MiMoGateway implements AiGateway {
     }
 
     private AiJudgment analyze(AiJudgmentType type, String prompt, List<String> imageUrls) {
+        int maxRetries = config.getRetryCount() > 0 ? config.getRetryCount() : 2;
+        long retryDelay = config.getRetryDelayMs() > 0 ? config.getRetryDelayMs() : 2000;
+
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return doAnalyze(type, prompt, imageUrls);
+            } catch (MiMoServiceException e) {
+                lastException = e;
+                if (attempt < maxRetries) {
+                    log.warn("MiMo API 调用失败 (第{}/{}次), {}ms后重试: {}", attempt, maxRetries, retryDelay, e.getMessage());
+                    sleep(retryDelay);
+                    retryDelay = Math.min(retryDelay * 2, 10000);
+                } else {
+                    log.error("MiMo API 调用失败，已重试{}次，放弃", maxRetries, e);
+                }
+            }
+        }
+
+        if (lastException != null) {
+            throw (lastException instanceof MiMoServiceException) ? (MiMoServiceException) lastException : new MiMoServiceException("AI 服务调用失败", lastException);
+        }
+        throw new MiMoServiceException("AI 服务调用失败: 未知错误");
+    }
+
+    private AiJudgment doAnalyze(AiJudgmentType type, String prompt, List<String> imageUrls) {
         try {
             RestTemplate restTemplate = createRestTemplate();
             String url = config.getBaseUrl() + "/chat/completions";
@@ -90,6 +119,14 @@ public class MiMoGateway implements AiGateway {
         } catch (Exception e) {
             log.error("MiMo API 调用异常", e);
             throw new MiMoServiceException("AI 服务调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    private void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -151,12 +188,12 @@ public class MiMoGateway implements AiGateway {
     }
 
     private RestTemplate createRestTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.getInterceptors().add((request, body, execution) -> {
-            ((org.springframework.http.HttpRequest) request).getHeaders()
-                    .set("Authorization", "Bearer " + config.getApiKey());
-            return execution.execute(request, body);
-        });
+        int timeout = config.getTimeout() > 0 ? config.getTimeout() : 30000;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(timeout);
+        factory.setReadTimeout(timeout);
+
+        RestTemplate restTemplate = new RestTemplate(factory);
         return restTemplate;
     }
 

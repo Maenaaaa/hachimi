@@ -62,9 +62,31 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public ReviewVO getById(Long reviewId) {
+    public ReviewVO getById(Long reviewId, Long currentUserId) {
         Review review = reviewMapper.selectById(reviewId);
         if (review == null) throw new BusinessException("评价不存在");
+
+        Order order = orderMapper.selectById(review.getOrderId());
+        if (order == null) throw new BusinessException("关联订单不存在");
+
+        boolean isBuyer = currentUserId != null && order.getBuyerId().equals(currentUserId);
+        boolean isSeller = currentUserId != null && order.getSellerId().equals(currentUserId);
+        if (!isBuyer && !isSeller) {
+            throw new BusinessException(403, "无权查看该评价");
+        }
+
+        if (!review.getReviewerId().equals(currentUserId)) {
+            List<Review> allReviews = reviewMapper.selectList(
+                    new LambdaQueryWrapper<Review>().eq(Review::getOrderId, review.getOrderId())
+                            .eq(Review::getDeleted, 0));
+            long reviewCount = allReviews.size();
+            if (reviewCount < 2) {
+                ReviewVO vo = toVO(review);
+                vo.setContent("");
+                vo.setRating(0);
+                return vo;
+            }
+        }
         return toVO(review);
     }
 
@@ -78,11 +100,46 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public List<ReviewVO> getBothByOrderId(Long orderId) {
+    public List<ReviewVO> getBothByOrderId(Long orderId, Long currentUserId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) throw new BusinessException("订单不存在");
+
+        boolean isBuyer = currentUserId != null && order.getBuyerId().equals(currentUserId);
+        boolean isSeller = currentUserId != null && order.getSellerId().equals(currentUserId);
+        if (!isBuyer && !isSeller) {
+            throw new BusinessException(403, "无权查看订单评价");
+        }
+
         List<Review> reviews = reviewMapper.selectList(
                 new LambdaQueryWrapper<Review>().eq(Review::getOrderId, orderId)
                         .eq(Review::getDeleted, 0));
-        return reviews.stream().map(this::toVO).toList();
+
+        if (reviews.size() >= 2) {
+            return reviews.stream().map(this::toVO).toList();
+        }
+
+        ReviewVO currentUserReview = null;
+        ReviewVO otherReview = null;
+
+        for (Review review : reviews) {
+            if (review.getReviewerId().equals(currentUserId)) {
+                currentUserReview = toVO(review);
+            } else {
+                otherReview = toVO(review);
+            }
+        }
+
+        if (currentUserReview != null && otherReview == null) {
+            return List.of(currentUserReview);
+        }
+
+        if (otherReview != null && currentUserReview == null) {
+            otherReview.setContent("");
+            otherReview.setRating(0);
+            return List.of(otherReview);
+        }
+
+        return List.of();
     }
 
     @Override

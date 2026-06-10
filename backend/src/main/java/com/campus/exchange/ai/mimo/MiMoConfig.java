@@ -15,4 +15,6 @@ public class MiMoConfig {
     private int maxTokens;
     private double temperature;
     private int timeout;
+    private int retryCount;
+    private long retryDelayMs;
 }

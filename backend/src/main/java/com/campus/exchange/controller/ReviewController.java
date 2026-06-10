@@ -25,13 +25,15 @@ public class ReviewController {
     }
 
     @GetMapping("/{id}")
-    public Result<ReviewVO> getById(@PathVariable Long id) {
-        return Result.ok(reviewService.getById(id));
+    public Result<ReviewVO> getById(@PathVariable Long id, @CurrentUser User user) {
+        Long currentUserId = user != null ? user.getId() : null;
+        return Result.ok(reviewService.getById(id, currentUserId));
     }
 
     @GetMapping("/order/{orderId}")
-    public Result<List<ReviewVO>> getBothByOrderId(@PathVariable Long orderId) {
-        return Result.ok(reviewService.getBothByOrderId(orderId));
+    public Result<List<ReviewVO>> getBothByOrderId(@PathVariable Long orderId, @CurrentUser User user) {
+        Long currentUserId = user != null ? user.getId() : null;
+        return Result.ok(reviewService.getBothByOrderId(orderId, currentUserId));
     }
 
     @GetMapping("/user/{userId}")

@@ -73,6 +73,8 @@ ai:
     max-tokens: 2048
     temperature: 0.3
     timeout: 30000
+    retry-count: 3
+    retry-delay-ms: 2000
   confidence:
     auto-threshold: 0.8
     escalate-threshold: 0.5

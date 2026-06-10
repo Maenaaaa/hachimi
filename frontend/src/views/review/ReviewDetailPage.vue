@@ -18,6 +18,7 @@ const loading = ref(true)
 
 const myReview = computed(() => allReviews.value.find(r => r.reviewerId === userStore.user?.id) || null)
 const otherReview = computed(() => allReviews.value.find(r => r.reviewerId !== userStore.user?.id) || review.value)
+const otherReviewMasked = computed(() => otherReview.value && !otherReview.value.content && !otherReview.value.rating)
 
 async function load() {
   const id = Number(route.params.id)
@@ -49,7 +50,7 @@ onMounted(load)
     </NButton>
 
     <NSpin :show="loading">
-      <template v-if="otherReview">
+      <template v-if="otherReview && !otherReviewMasked">
         <!-- 对方的评价 -->
         <NCard :bordered="true" style="border-radius: 12px">
           <template #header>
@@ -120,6 +121,17 @@ onMounted(load)
             </div>
           </NCard>
         </template>
+      </template>
+      <template v-else-if="otherReviewMasked">
+        <NCard :bordered="true" style="border-radius: 12px">
+          <div class="text-center py-6">
+            <p class="text-base text-gray-500 mb-1">对方已评价</p>
+            <p class="text-sm text-gray-400">完成你的评价后即可查看对方评价内容</p>
+            <NButton type="primary" size="small" class="mt-4" @click="router.push('/my-orders')">
+              去评价
+            </NButton>
+          </div>
+        </NCard>
       </template>
       <NEmpty v-else-if="!loading" description="评价不存在" />
     </NSpin>
