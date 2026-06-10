@@ -514,10 +514,10 @@ onMounted(fetchData)
             <!-- Actions -->
             <NCard :bordered="true" style="border-radius: 12px" v-if="!isOwner">
               <div class="flex gap-3">
-                <NButton type="primary" size="large" block :disabled="goods.status !== 'ACTIVE'" @click="handleBuy">
+                <NButton type="primary" size="large" style="flex: 1" :disabled="goods.status !== 'ACTIVE'" @click="handleBuy">
                   {{ goods.tradeType === 'EXCHANGE' ? '发起置换' : '立即购买' }}
                 </NButton>
-                <NButton size="large" @click="startChat">
+                <NButton type="success" size="large" style="flex: 1" @click="startChat">
                   <template #icon><NIcon><Chat24Filled /></NIcon></template>
                   私聊
                 </NButton>

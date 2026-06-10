@@ -18,7 +18,7 @@ export function useWebSocket() {
     if (!token) return
 
     globalClient = new Client({
-      brokerURL: `ws://${window.location.host}/ws`,
+      brokerURL: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`,
       connectHeaders: { Authorization: `Bearer ${token}` },
       debug: () => {},
       reconnectDelay: 5000,
