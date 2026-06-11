@@ -86,7 +86,9 @@ async function loadProfile() {
     if (targetUserId) {
       promises.push(
         getUserReviews(targetUserId).then((res: any) => { reviews.value = res.data || [] }).catch(() => {}),
-        getUserGoods(targetUserId).then((res: any) => { myGoods.value = res.data || [] }).catch(() => {}),
+        isOwnProfile.value
+          ? getMyGoods().then((res: any) => { myGoods.value = res.data || [] }).catch(() => {})
+          : getUserGoods(targetUserId).then((res: any) => { myGoods.value = res.data || [] }).catch(() => {}),
       )
     }
 
