@@ -94,6 +94,30 @@ public class CommentServiceImpl implements CommentService {
         return roots;
     }
 
+    @Override
+    @Transactional
+    public void delete(Long userId, Long commentId) {
+        GoodsComment comment = commentMapper.selectById(commentId);
+        if (comment == null) throw new BusinessException("留言不存在");
+
+        Goods goods = goodsMapper.selectById(comment.getGoodsId());
+        if (goods == null) throw new BusinessException("商品不存在");
+
+        boolean isCommentOwner = comment.getUserId().equals(userId);
+        boolean isGoodsOwner = goods.getUserId().equals(userId);
+        if (!isCommentOwner && !isGoodsOwner) {
+            throw new BusinessException("无权删除该留言");
+        }
+
+        commentMapper.deleteById(commentId);
+
+        List<GoodsComment> replies = commentMapper.selectList(
+                new LambdaQueryWrapper<GoodsComment>().eq(GoodsComment::getParentId, commentId));
+        for (GoodsComment reply : replies) {
+            commentMapper.deleteById(reply.getId());
+        }
+    }
+
     private CommentVO toVO(GoodsComment c) {
         return toVO(c, null);
     }

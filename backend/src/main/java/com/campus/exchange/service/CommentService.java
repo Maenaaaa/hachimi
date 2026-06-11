@@ -7,4 +7,5 @@ import java.util.List;
 public interface CommentService {
     CommentVO create(Long userId, CreateCommentDTO dto);
     List<CommentVO> getByGoodsId(Long goodsId);
+    void delete(Long userId, Long commentId);
 }

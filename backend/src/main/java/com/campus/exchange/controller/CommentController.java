@@ -28,4 +28,10 @@ public class CommentController {
     public Result<List<CommentVO>> getByGoodsId(@PathVariable Long goodsId) {
         return Result.ok(commentService.getByGoodsId(goodsId));
     }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@CurrentUser User user, @PathVariable Long id) {
+        commentService.delete(user.getId(), id);
+        return Result.ok();
+    }
 }

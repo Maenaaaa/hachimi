@@ -5,7 +5,7 @@ import { getGoodsDetail, toggleGoodsStatus, deleteGoods, getMyGoods } from '@/ap
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import { addFollow, removeFollow } from '@/api/follow'
 import { createOrder } from '@/api/order'
-import { getComments, createComment } from '@/api/comment'
+import { getComments, createComment, deleteComment } from '@/api/comment'
 import { createReport } from '@/api/report'
 import { getAiJudgmentBySource, getAiJudgmentsByGoodsId, appealAiJudgment } from '@/api/ai-judgment'
 import { getImageUrl, getAvatarUrl, formatPrice, formatDate } from '@/utils'
@@ -247,6 +247,24 @@ async function handleSubmitComment() {
 function handleReply(comment: any) {
   replyTo.value = { id: comment.id, name: comment.userNickname }
   commentText.value = ''
+}
+
+function handleDeleteComment(commentId: number) {
+  dialog.warning({
+    title: '确认删除',
+    content: '确定要删除该留言吗？其下的所有回复也将被删除。',
+    positiveText: '确定删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await deleteComment(commentId)
+        message.success('删除成功')
+        fetchData()
+      } catch {
+        message.error('删除失败')
+      }
+    },
+  })
 }
 
 // 举报相关函数
@@ -577,7 +595,10 @@ onMounted(fetchData)
                       <span class="text-xs text-gray-400">{{ formatDate(c.createTime) }}</span>
                     </div>
                     <p class="text-sm text-gray-600 mt-1">{{ c.content }}</p>
-                    <NButton v-if="userStore.isLoggedIn" size="tiny" quaternary class="mt-1" @click="handleReply(c)">回复</NButton>
+                    <div class="flex gap-2 mt-1">
+                      <NButton v-if="userStore.isLoggedIn" size="tiny" quaternary @click="handleReply(c)">回复</NButton>
+                      <NButton v-if="userStore.isLoggedIn && (c.userId === userStore.user?.id || isOwner)" size="tiny" quaternary type="error" @click="handleDeleteComment(c.id)">删除</NButton>
+                    </div>
 
                     <!-- Replies -->
                     <div v-if="c.replies && c.replies.length > 0" class="mt-2 ml-4 pl-3 border-l-2 border-gray-100 space-y-2">
@@ -589,6 +610,9 @@ onMounted(fetchData)
                             <span class="text-xs text-gray-400">{{ formatDate(r.createTime) }}</span>
                           </div>
                           <p class="text-xs text-gray-600 mt-0.5">{{ r.content }}</p>
+                          <div v-if="userStore.isLoggedIn && (r.userId === userStore.user?.id || isOwner)" class="flex gap-2 mt-0.5">
+                            <NButton size="tiny" quaternary type="error" @click="handleDeleteComment(r.id)">删除</NButton>
+                          </div>
                         </div>
                       </div>
                     </div>
